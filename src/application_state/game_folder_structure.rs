@@ -1,0 +1,240 @@
+use crate::{level::level::LevelData, renderer::texture::TextureId};
+use anyhow::Ok;
+use gltf::Gltf;
+use ron::ser::PrettyConfig;
+use serde::{Deserialize, Serialize};
+use cfg_if::cfg_if;
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fs::{self, create_dir, read, read_dir, read_to_string},
+    path::{Path, PathBuf}, io::{Cursor, BufReader},
+};
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GameConfigFile {
+    pub level_order: Vec<String>,
+}
+
+impl GameConfigFile {
+    pub fn new() -> Self {
+        Self {
+            level_order: vec![],
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct GameData {
+    pub config_file: GameConfigFile,
+    pub levels: Vec<String>,
+    pub levels_data: HashMap<String, LevelData>,
+    pub textures: Vec<(TextureId, Box<[u8]>, Box<str>)>,
+    pub current_level: Option<String>,
+}
+
+impl GameData {
+    pub fn new() -> Self {
+        Self {
+            config_file: GameConfigFile::new(),
+            levels: vec![],
+            levels_data: HashMap::new(),
+            textures: vec![],
+            current_level: None,
+        }
+    }
+    pub fn update_config(&mut self) {
+        self.config_file.level_order = self.levels.clone();
+    }
+    pub fn generate_new_game_folder(&self, path: PathBuf) -> anyhow::Result<()> {
+        fs::remove_dir_all(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        let _ = create_dir(path.join("textures"));
+        self.textures.iter().try_for_each(|texture| {
+            fs::write(
+                path.join(format!("textures/{}.{}", texture.0, texture.2)),
+                texture.1.as_ref(),
+            )?;
+            Ok(())
+        })?;
+        let _ = create_dir(path.join("levels"));
+        self.levels.iter().try_for_each(|level| {
+            fs::write(
+                path.join(format!("levels/{}.ron", level)),
+                ron::ser::to_string_pretty(
+                    &self.levels_data.get(level).expect(
+                        "the only insert was with this very data so something bad happened",
+                    ),
+                    PrettyConfig::new(),
+                )?
+                .as_bytes(),
+            )?;
+            Ok(())
+        })?;
+        fs::write(
+            path.join("config.ron"),
+            ron::ser::to_string_pretty(&self.config_file, PrettyConfig::new())?.as_bytes(),
+        )?;
+        //Self::generate(&path).expect("need to fix folder/file generating function");
+        Ok(())
+    }
+    pub fn generate(path: &PathBuf) -> Option<Self> {
+        let mut textures: Vec<(TextureId, Box<[u8]>, Box<str>)> = vec![];
+
+        read_dir(path.join("textures"))
+            .ok()?
+            .into_iter()
+            .for_each(|entry| {
+                if let Some(filepath) = entry.ok() {
+                    if filepath
+                        .path()
+                        .has_extension(&["png", "jpg", "jpeg", "gif", "bmp"])
+                    {
+                        textures.push((
+                            filepath
+                                .file_name()
+                                .into_string()
+                                .expect("non-unicode charecter in file name")
+                                .into_boxed_str(),
+                            read(filepath.path())
+                                .expect("file can't be read for some reason :(")
+                                .into_boxed_slice(),
+                            filepath
+                                .path()
+                                .extension()
+                                .expect("can't get file extension")
+                                .to_str()
+                                .expect("couldn't turn extextion into &str")
+                                .into(),
+                        ));
+                    }
+                }
+            });
+        let config_file: GameConfigFile =
+            ron::from_str(read_to_string(path.join("config.ron")).ok()?.as_str()).ok()?;
+        let mut levels: Vec<String> = vec![];
+        let mut levels_data: HashMap<String, LevelData> = HashMap::new();
+        for level_name in &config_file.level_order {
+            levels.push(level_name.clone());
+            levels_data.insert(
+                level_name.clone(),
+                ron::from_str(
+                    read_to_string(path.join(format!("levels/{}.ron", level_name)))
+                        .ok()?
+                        .as_str(),
+                )
+                .ok()?,
+            );
+        }
+        Some(Self {
+            current_level: None,
+            config_file,
+            textures,
+            levels,
+            levels_data,
+        })
+    }
+    pub async fn load_model_gltf(
+        file_name: &str
+    ) -> anyhow::Result<bool> {
+        let gltf_text = load_string(file_name).await?;
+        let gltf_cursor = Cursor::new(gltf_text);
+        let gltf_reader = BufReader::new(gltf_cursor);
+        let gltf = Gltf::from_reader(gltf_reader)?;
+    
+        let mut buffer_data = Vec::new();
+    for buffer in gltf.buffers() {
+        match buffer.source() {
+            gltf::buffer::Source::Bin => {
+                // if let Some(blob) = gltf.blob.as_deref() {
+                //     buffer_data.push(blob.into());
+                //     println!("Found a bin, saving");
+                // };
+            }
+            gltf::buffer::Source::Uri(uri) => {
+                let bin = load_binary(uri).await?;
+                buffer_data.push(bin);
+            }
+        }
+    }
+
+    for scene in gltf.scenes() {
+        for node in scene.nodes() {
+            let mesh = node.mesh().expect("Got mesh");
+            let primitives = mesh.primitives();
+            primitives.for_each(|primitive| {
+
+                let reader = primitive.reader(|buffer| Some(&buffer_data[buffer.index()]));
+
+                if let Some(vertex_attibute) = reader.read_positions().map(|v| {
+                    dbg!(v);
+                }) {
+                    // Save the position here using mapped vertex_attribute result
+                }
+            });
+        }
+    }
+
+    Ok(true)
+
+    
+    }
+}
+
+pub trait FileExtension {
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
+}
+
+impl<P: AsRef<Path>> FileExtension for P {
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
+        if let Some(ref extension) = self.as_ref().extension().and_then(OsStr::to_str) {
+            return extensions
+                .iter()
+                .any(|x| x.as_ref().eq_ignore_ascii_case(extension));
+        }
+
+        false
+    }
+}
+
+pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
+    cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            log::warn!("Load model on web");
+
+            let url = format_url(file_name);
+            let txt = reqwest::get(url)
+                .await?
+                .text()
+                .await?;
+
+            log::warn!("{}", txt);
+
+        } else {
+            let path = std::path::Path::new("assets")
+                .join(file_name);
+            let txt = std::fs::read_to_string(path)?;
+        }
+    }
+
+    Ok(txt)
+}
+
+pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
+    cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            let url = format_url(file_name);
+            let data = reqwest::get(url)
+                .await?
+                .bytes()
+                .await?
+                .to_vec();
+        } else {
+            let path = std::path::Path::new("assets")
+                .join(file_name);
+            let data = std::fs::read(path)?;
+        }
+    }
+
+    Ok(data)
+}
