@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct HallWay {
     pub start: ControlRectId,
     pub others: Vec<HallWaySegment>,
+    
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
