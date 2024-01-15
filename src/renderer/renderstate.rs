@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    camer_control::CameraController, level::blocks::meshable::Mesh,
+    camer_control::CameraController, level::mesh::Mesh,
     plagerized_code_to_update_dependencies,
 };
 
