@@ -22,7 +22,7 @@ use winit::{
 use crate::{
     application_state::application_state::ApplicationState,
     level::{
-        blocks::meshable::Mesh,
+        mesh::{Mesh, Meshable},
         level::{LevelData, LevelState},
     },
     renderer::camera::Camera,
@@ -71,7 +71,6 @@ pub async fn run() {
         Camera::new(Point3::new(0.0, 0.0, -10.0), Rad(0.0), Rad(0.0)),
     );
     let mut level_state = LevelState::from_level_data(&level);
-    level_state.mesh_all();
 
     let size = render_state.size;
     let mut platform = Platform::new(PlatformDescriptor {
@@ -133,12 +132,7 @@ pub async fn run() {
                     };
 
                     render_state.update(dt, &mut level_state.camera_controler);
-                    let meshs: Vec<Mesh> = level_state
-                        .cached_meshs
-                        .values()
-                        .map(|meshs| meshs.iter().map(|mesh| mesh.clone()))
-                        .flatten()
-                        .collect();
+                    let meshs: Vec<Mesh> = level_state.mesh();
                     match render_state.render(meshs, full_output, &platform) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost) => render_state.resize(render_state.size),

@@ -1,4 +1,2 @@
-pub mod prefabs;
+pub mod mesh;
 pub mod level;
-pub mod blocks;
-pub mod spatial_grid;

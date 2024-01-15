@@ -233,7 +233,6 @@ impl ApplicationState {
                 if let EditorState::LevelSelection { selected_level:Some(selected_level),.. } = editor_state.clone() {
                     *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone() };
                     *level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
-                    level_state.mesh_all();
                 }
             }
         }
