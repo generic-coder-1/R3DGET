@@ -32,12 +32,16 @@ impl LevelData {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LevelState {
     pub camera_controler: CameraController,
+    pub control_rects:HashMap<ControlRectId,ControlRect>,
+    pub hallways:Vec<HallWay>,
 }
 
 impl LevelState {
     pub fn from_level_data(data: &LevelData) -> Self {
         Self {
             camera_controler: data.start_camera.clone(),
+            control_rects:data.control_rects.clone(),
+            hallways:data.hallways.clone(),
         }
     }
 }

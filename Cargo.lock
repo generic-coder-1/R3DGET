@@ -2058,6 +2058,7 @@ dependencies = [
  "ron",
  "serde",
  "tobj",
+ "uid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -2693,6 +2694,12 @@ checksum = "deb68604048ff8fa93347f02441e4487594adc20bb8a084f9e564d2b827a0a9f"
 dependencies = [
  "rustc-hash",
 ]
+
+[[package]]
+name = "uid"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "281a11e4180ee68f8c06a7bf82d1be3c496e0debcadcc4576cc0b56132201edf"
 
 [[package]]
 name = "unicode-bidi"

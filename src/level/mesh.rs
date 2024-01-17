@@ -36,3 +36,18 @@ impl Mesh {
         self.vertices.append(&mut other.vertices);
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MeshTex{
+    pub id:TextureId,
+    pub fill:TexFill,
+    pub offset:[f32;2],
+    pub fliped:bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TexFill{
+    Stretch,
+    TileSpecific([f32;2]),
+    TileScale(f32),
+}
