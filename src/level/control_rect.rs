@@ -47,6 +47,7 @@ impl<'de> Deserialize<'de> for ControlRectId {
 pub struct ControlRect {
     pub position: [f32; 3],
     pub rotation: f32,
+    pub visible:bool,
     pub top: f32,
     pub bottom: f32,
     pub left: f32,
@@ -56,6 +57,7 @@ pub struct ControlRect {
 impl ControlRect {
     pub fn new(position: [f32; 3], rotation: f32, width: f32, height: f32) -> Self {
         Self {
+            visible:false,
             position,
             rotation,
             top: height / 2.,
