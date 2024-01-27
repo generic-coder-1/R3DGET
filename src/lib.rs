@@ -22,8 +22,8 @@ use winit::{
 use crate::{
     application_state::application_state::ApplicationState,
     level::{
-        mesh::{Mesh, Meshable},
         level::{LevelData, LevelState},
+        mesh::{Mesh, Meshable},
     },
     renderer::camera::Camera,
 };
@@ -64,7 +64,7 @@ pub async fn run() {
     let mut application_state = ApplicationState::new();
 
     let mut render_state: State = State::new(window, vec![], vec![]).await;
-    let mut level = LevelData::new();
+    let mut level = LevelData::new(&("default".into()));
     level.start_camera = camer_control::CameraController::new(
         4.0,
         0.4,
@@ -86,9 +86,11 @@ pub async fn run() {
     let _ = event_loop.run(move |winit_event, control_flow| {
         let is_event_captured = platform.captures_event(&winit_event);
         platform.handle_event(&winit_event);
-        render_state.window().set_cursor_visible(application_state.interacting_with_ui);
+        render_state
+            .window()
+            .set_cursor_visible(application_state.interacting_with_ui);
         match winit_event {
-            Event::DeviceEvent { event,.. }=>{
+            Event::DeviceEvent { event, .. } => {
                 application_state.input_device(&event, &mut level_state);
             }
             Event::WindowEvent {

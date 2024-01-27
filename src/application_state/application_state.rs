@@ -154,7 +154,7 @@ impl ApplicationState {
                                         return acc;
                                     });
                                     game_data.levels.push(format!("new_level_{}",num+1));
-                                    game_data.levels_data.insert(format!("new_level_{}",num+1), LevelData::new());
+                                    game_data.levels_data.insert(format!("new_level_{}",num+1), LevelData::new(&("default".into())));
                                     possible_new_level_names.insert(format!("new_level_{}",num+1), format!("new_level_{}",num+1));
                                 }
                                 if ui.button("save").clicked(){
