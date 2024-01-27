@@ -7,19 +7,18 @@ use serde::{Deserialize, Serialize};
 pub struct HallWay {
     pub start: ControlRectId,
     pub others: Vec<HallWaySegment>,
-
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HallWaySegment {
     pub rect_id: ControlRectId,
-    pub project: HallWayTexProject
+    pub project: HallWayTexProject,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum HallWayTexProject{
+pub enum HallWayTexProject {
     Flat(MeshTex),
-    Regular{
+    Regular {
         sides: MeshTex,
         roof: MeshTex,
         floor: MeshTex,
@@ -27,12 +26,18 @@ pub enum HallWayTexProject{
 }
 
 impl HallWay {
-    pub fn new(start: ControlRectId, end: ControlRectId, roof: MeshTex, floor:MeshTex, sides:MeshTex) -> Self {
+    pub fn new(
+        start: ControlRectId,
+        end: ControlRectId,
+        roof: MeshTex,
+        floor: MeshTex,
+        sides: MeshTex,
+    ) -> Self {
         Self {
             start,
             others: vec![HallWaySegment {
                 rect_id: end,
-                project:HallWayTexProject::Regular { sides, roof, floor }
+                project: HallWayTexProject::Regular { sides, roof, floor },
             }],
         }
     }

@@ -1,15 +1,13 @@
 use cgmath::*;
-use serde::{Serialize, Deserialize};
-use winit::keyboard::KeyCode;
+use serde::{Deserialize, Serialize};
 use std::f32::consts::FRAC_PI_2;
 use std::time::Duration;
 use winit::event::*;
+use winit::keyboard::KeyCode;
 
 use crate::renderer::camera::Camera;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
-
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CameraController {
@@ -24,11 +22,11 @@ pub struct CameraController {
     scroll: f32,
     speed: f32,
     sensitivity: f32,
-    self_camera:Camera,
+    self_camera: Camera,
 }
 
-impl CameraController{
-    pub fn new(speed: f32, sensitivity: f32, self_camera:Camera) -> Self {
+impl CameraController {
+    pub fn new(speed: f32, sensitivity: f32, self_camera: Camera) -> Self {
         Self {
             amount_left: 0.0,
             amount_right: 0.0,
@@ -47,7 +45,6 @@ impl CameraController{
 }
 
 impl CameraController {
-
     pub fn process_keybord(&mut self, key: &KeyCode, state: &ElementState) -> bool {
         let amount = if *state == ElementState::Pressed {
             1.0
@@ -95,8 +92,10 @@ impl CameraController {
         let (yaw_sin, yaw_cos) = self.self_camera.yaw.0.sin_cos();
         let forward = Vector3::new(yaw_cos, 0.0, yaw_sin).normalize();
         let right = Vector3::new(-yaw_sin, 0.0, yaw_cos).normalize();
-        self.self_camera.position += forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
-        self.self_camera.position += right * (self.amount_right - self.amount_left) * self.speed * dt;
+        self.self_camera.position +=
+            forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
+        self.self_camera.position +=
+            right * (self.amount_right - self.amount_left) * self.speed * dt;
 
         // Move in/out (aka. "zoom")
         // Note: this isn't an actual zoom. The camera's position

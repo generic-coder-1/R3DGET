@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use uid::Id;
 
-#[derive(Debug, Clone, Hash, PartialEq, PartialOrd,Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, PartialOrd, Eq)]
 pub struct ControlRectId {
     id: Id<PhantomData<ControlRect>>,
 }
@@ -47,25 +47,17 @@ impl<'de> Deserialize<'de> for ControlRectId {
 pub struct ControlRect {
     pub position: [f32; 3],
     pub rotation: f32,
-    pub visible:bool,
-    pub top: f32,
-    pub bottom: f32,
-    pub left: f32,
-    pub right: f32,
+    pub visible: bool,
+    pub size: [f32; 2],
 }
 
 impl ControlRect {
-    pub fn new(position: [f32; 3], rotation: f32, width: f32, height: f32) -> Self {
+    pub fn new(position: [f32; 3], rotation: f32, size: [f32; 2]) -> Self {
         Self {
-            visible:false,
+            visible: false,
             position,
             rotation,
-            top: height / 2.,
-            bottom: height / 2.,
-            left: width / 2.,
-            right: width / 2.,
+            size,
         }
     }
 }
-
-

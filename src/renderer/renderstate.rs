@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-
 use crate::{
-    camer_control::CameraController, level::mesh::Mesh,
-    plagerized_code_to_update_dependencies,
+    camer_control::CameraController, level::mesh::Mesh, plagerized_code_to_update_dependencies,
 };
 
 use super::{
@@ -431,11 +429,13 @@ impl State {
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&self
-                                .textures
-                                .get(&texture)
-                                .unwrap_or(&self.default_texture)
-                                .view),
+                            resource: wgpu::BindingResource::TextureView(
+                                &self
+                                    .textures
+                                    .get(&texture)
+                                    .unwrap_or(&self.default_texture)
+                                    .view,
+                            ),
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,

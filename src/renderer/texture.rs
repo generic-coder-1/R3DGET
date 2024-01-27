@@ -5,13 +5,22 @@ pub type TextureId = Box<str>;
 
 struct DefaultWrapper<'a>(wgpu::TextureViewDescriptor<'a>);
 
-impl<'a> Default for DefaultWrapper<'a>{
+impl<'a> Default for DefaultWrapper<'a> {
     fn default() -> Self {
-        Self(wgpu::TextureViewDescriptor{ label: Default::default(), format: Default::default(), dimension: Default::default(), aspect: Default::default(), base_mip_level: Default::default(), mip_level_count: Default::default(), base_array_layer: Default::default(), array_layer_count: Default::default() })
+        Self(wgpu::TextureViewDescriptor {
+            label: Default::default(),
+            format: Default::default(),
+            dimension: Default::default(),
+            aspect: Default::default(),
+            base_mip_level: Default::default(),
+            mip_level_count: Default::default(),
+            base_array_layer: Default::default(),
+            array_layer_count: Default::default(),
+        })
     }
 }
 
-pub fn default_texture_view_descriptor<'a>()->wgpu::TextureViewDescriptor<'a>{
+pub fn default_texture_view_descriptor<'a>() -> wgpu::TextureViewDescriptor<'a> {
     DefaultWrapper::default().0
 }
 pub struct Texture {
@@ -177,5 +186,4 @@ impl Texture {
             sampler,
         })
     }
-    
 }
