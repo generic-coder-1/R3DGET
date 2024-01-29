@@ -62,8 +62,8 @@ impl MeshTex {
     }
     pub fn get_tex_coords(&self, width: f32, height: f32, x: f32, y: f32) -> [f32; 2] {
         [
-            (if self.fliped[0] { 1.0 - x } else { x } / width) * self.tile[0] + self.offset[0],
-            (if self.fliped[1] { 1.0 - y } else { y } / height) * self.tile[1] + self.offset[0],
+            (if self.fliped[0] { x } else { width-x } / width) * self.tile[0] + self.offset[0],
+            (if self.fliped[1] { y } else { height-y } / height) * self.tile[1] + self.offset[0],
         ]
     }
 }
