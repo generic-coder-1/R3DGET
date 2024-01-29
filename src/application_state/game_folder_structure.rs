@@ -46,6 +46,12 @@ impl GameData {
     pub fn update_config(&mut self) {
         self.config_file.level_order = self.levels.clone();
     }
+
+    pub fn update_folder(&self,path:PathBuf)->anyhow::Result<()>{
+        
+        Ok(())
+    }
+
     pub fn generate_new_game_folder(&self, path: PathBuf) -> anyhow::Result<()> {
         fs::remove_dir_all(&path).unwrap();
         fs::create_dir(&path).unwrap();

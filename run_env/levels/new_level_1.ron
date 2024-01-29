@@ -1,0 +1,124 @@
+(
+    start_camera: (
+        amount_left: 0.0,
+        amount_right: 0.0,
+        amount_forward: 0.0,
+        amount_backward: 0.0,
+        amount_up: 0.0,
+        amount_down: 0.0,
+        rotate_horizontal: 0.0,
+        rotate_vertical: 0.0,
+        scroll: 0.0,
+        speed: 4.0,
+        sensitivity: 0.4,
+        self_camera: (
+            position: (
+                x: 0.0,
+                y: 2.0,
+                z: 0.0,
+            ),
+            yaw: (0.0),
+            pitch: (0.0),
+        ),
+    ),
+    control_rects: {},
+    hallways: [],
+    rooms: [
+        (
+            position: (
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            ),
+            rotation: (0.0),
+            walls: [
+                (
+                    local_pos: (
+                        x: -1.0,
+                        y: -1.0,
+                    ),
+                    wall_texture: (
+                        id: "default",
+                        offset: (0.0, 0.0),
+                        tile: (1.0, 1.0),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: 1.0,
+                        y: -1.0,
+                    ),
+                    wall_texture: (
+                        id: "default",
+                        offset: (0.0, 0.0),
+                        tile: (1.0, 1.0),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: 1.0,
+                        y: 1.0,
+                    ),
+                    wall_texture: (
+                        id: "default",
+                        offset: (0.0, 0.0),
+                        tile: (1.0, 1.0),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: -1.0,
+                        y: 1.0,
+                    ),
+                    wall_texture: (
+                        id: "default",
+                        offset: (0.0, 0.0),
+                        tile: (1.0, 1.0),
+                        fliped: (false, false),
+                    ),
+                ),
+            ],
+            doors: {
+                4: (
+                    wall: 0,
+                    offset: (
+                        x: 0.5,
+                        y: 0.0,
+                    ),
+                    size: (
+                        x: 0.5,
+                        y: 1.0,
+                    ),
+                ),
+                3: (
+                    wall: 0,
+                    offset: (
+                        x: -0.5,
+                        y: 0.0,
+                    ),
+                    size: (
+                        x: 0.5,
+                        y: 1.0,
+                    ),
+                ),
+            },
+            height: 5.0,
+            moddifiers: [],
+            floor_texture: (
+                id: "default",
+                offset: (0.0, 0.0),
+                tile: (1.0, 1.0),
+                fliped: (false, false),
+            ),
+            roof_texture: (
+                id: "default",
+                offset: (0.0, 0.0),
+                tile: (1.0, 1.0),
+                fliped: (false, false),
+            ),
+        ),
+    ],
+)
