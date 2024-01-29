@@ -5,7 +5,7 @@ use crate::{
     renderer::{camera::Camera, texture::TextureId},
 };
 
-use cgmath::{Basis3, Point3, Rad, Rotation3};
+use cgmath::{Point3, Rad};
 use serde::{Deserialize, Serialize};
 
 use super::{
