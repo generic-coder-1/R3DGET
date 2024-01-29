@@ -2,6 +2,9 @@ use std::{collections::HashMap, marker::PhantomData, ops::Deref, vec};
 
 use cgmath::{Array, InnerSpace, Matrix2, MetricSpace, Rad, Vector2, Vector3};
 use earcutr;
+use geo::{
+    coord, BooleanOps, CoordsIter, MultiPolygon, Polygon, Rect,
+};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use uid::IdU16;
@@ -29,23 +32,6 @@ impl Room {
         roof_texture: &MeshTex,
         wall_texture: &MeshTex,
     ) -> Self {
-        let mut doors = HashMap::new();
-        doors.insert(
-            DoorId::new(),
-            Door {
-                wall: 0,
-                offset: Vector2::new(-0.5, 0.),
-                size: Vector2::new(0.5, 1.),
-            },
-        );
-        doors.insert(
-            DoorId::new(),
-            Door {
-                wall: 0,
-                offset: Vector2::new(0.5, 0.),
-                size: Vector2::new(0.5, 1.),
-            },
-        );
         Self {
             position,
             height,
@@ -57,7 +43,7 @@ impl Room {
                 Wall::new([-1., 1.].into(), wall_texture.clone()),
             ],
             moddifiers: vec![],
-            doors,
+            doors:HashMap::new(),
             floor_texture: floor_texture.clone(),
             roof_texture: roof_texture.clone(),
         }
@@ -179,29 +165,15 @@ impl Meshable for Room {
                     top_right.to_vec(),
                     vec![0., top_right[1]],
                 ];
-                let mut holes = doors
-                    .iter()
-                    .map(|door| {
-                        vec![
-                            vec![
-                                (top_right[0] - door.size.x) / 2. + door.offset.x,
-                                (top_right[1] - door.size.y) / 2. + door.offset.y,
-                            ],
-                            vec![
-                                (top_right[0] + door.size.x) / 2. + door.offset.x,
-                                (top_right[1] - door.size.y) / 2. + door.offset.y,
-                            ],
-                            vec![
-                                (top_right[0] + door.size.x) / 2. + door.offset.x,
-                                (top_right[1] + door.size.y) / 2. + door.offset.y,
-                            ],
-                            vec![
-                                (top_right[0] - door.size.x) / 2. + door.offset.x,
-                                (top_right[1] + door.size.y) / 2. + door.offset.y,
-                            ],
-                        ]
-                    })
-                    .collect_vec();
+                let mut holes = doors.iter().fold(MultiPolygon::new(vec![]),|acc,door: &&Door|{
+                    let rect = Rect::new(
+                        coord! {x:(top_right[0] - door.size.x) / 2. + door.offset.x,y:(top_right[1] - door.size.y) / 2. + door.offset.y},
+                        coord! {x:(top_right[0] + door.size.x) / 2. + door.offset.x,y:(top_right[1] + door.size.y) / 2. + door.offset.y},
+                    );
+                    acc.union(&MultiPolygon::new(vec![Polygon::from(rect)]))
+                }).into_iter().map(|polygon|{
+                    polygon.exterior_coords_iter().map(|coord|{vec![coord.x,coord.y]}).collect_vec()
+                }).collect_vec();
                 let mut temp_input = vec![wall_points];
                 temp_input.append(&mut holes);
                 let (e_points, e_holes, dim) = earcutr::flatten(&temp_input);
