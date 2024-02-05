@@ -61,7 +61,7 @@ pub struct State {
     projection: Projection,
     depth_texture: Texture,
     pub textures: HashMap<TextureId, Texture>,
-    default_texture: Texture,
+    pub default_texture: Texture,
     ui_renderer: Renderer,
 }
 

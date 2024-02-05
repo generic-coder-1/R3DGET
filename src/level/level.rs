@@ -1,48 +1,77 @@
-use std::collections::HashMap;
+use std::f32::consts::PI;
 
 use crate::{
     camer_control::CameraController,
-    renderer::{camera::Camera, texture::TextureId},
+    renderer::{camera::Camera, texture::TextureData},
 };
 
-use cgmath::{Point3, Rad};
+use cgmath::{Point3, Rad, Vector2};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    control_rect::{ControlRect, ControlRectId},
-    hallway::HallWay,
+    hallway::{HallWay, HallWayTexData},
     mesh::{Mesh, MeshTex, Meshable},
-    room::Room,
+    room::{Door, Room},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LevelData {
     pub start_camera: CameraController,
-    pub control_rects: HashMap<ControlRectId, ControlRect>,
     pub hallways: Vec<HallWay>,
     pub rooms: Vec<Room>,
 }
 
 impl LevelData {
-    pub fn new(default_tex_id: &TextureId) -> Self {
-        let control_rects = HashMap::new();
-        let defualt_mesh_tex = MeshTex::new(default_tex_id.clone());
+    pub fn none()->Self{
+        Self { start_camera: CameraController::new(0., 0., Camera::new([0.,0.,0.],Rad(0.), Rad(0.))), hallways: vec![], rooms: vec![] }
+    }
+    pub fn new(default_tex_id: &TextureData) -> Self {
+        let defualt_mesh_tex = MeshTex::new(default_tex_id.clone(),super::mesh::TileStyle::TileScale(0.1, true));
+        let mut rooms = vec![
+            Room::new(
+                [0., 0., 0.].into(),
+                Rad(PI / 4.),
+                5.,
+                defualt_mesh_tex.clone(),
+                defualt_mesh_tex.clone(),
+                defualt_mesh_tex.clone(),
+            ),
+            Room::new(
+                [20., 0., 0.].into(),
+                Rad(-PI/3.),
+                3.,
+                defualt_mesh_tex.clone(),
+                defualt_mesh_tex.clone(),
+                defualt_mesh_tex.clone(),
+            ),
+        ];
+        let id1 = rooms[0].new_door(Door {
+            wall: 0,
+            offset: Vector2::new(0., 0.),
+            size: Vector2::new(1., 4.),
+            vertical_alignment: super::room::VerticalAlign::Bottom,
+            horizontal_alignment: super::room::HorizontalAlign::Center,
+        });
+        let id2 = rooms[1].new_door(Door {
+            wall: 3,
+            offset: Vector2::new(0., 0.),
+            size: Vector2::new(1., 2.),
+            vertical_alignment: super::room::VerticalAlign::Bottom,
+            horizontal_alignment: super::room::HorizontalAlign::Center,
+        });
+        let hallway = HallWay::new(
+            rooms[0].get_control_rect(&id1, true),
+            rooms[1].get_control_rect(&id2, false),
+            HallWayTexData::all(defualt_mesh_tex.clone()),
+        );
         Self {
             start_camera: CameraController::new(
                 4.0,
                 0.4,
                 Camera::new(Point3::new(0.0, 2.0, 0.0), Rad(0.0), Rad(0.0)),
             ),
-            control_rects,
-            hallways: vec![],
-            rooms: vec![Room::new(
-                [0., 0., 0.].into(),
-                Rad(0.),
-                5.,
-                &defualt_mesh_tex,
-                &defualt_mesh_tex,
-                &defualt_mesh_tex,
-            )],
+            hallways: vec![hallway],
+            rooms,
         }
     }
 }
@@ -50,7 +79,6 @@ impl LevelData {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LevelState {
     pub camera_controler: CameraController,
-    pub control_rects: HashMap<ControlRectId, ControlRect>,
     pub hallways: Vec<HallWay>,
     pub rooms: Vec<Room>,
 }
@@ -59,9 +87,8 @@ impl LevelState {
     pub fn from_level_data(data: &LevelData) -> Self {
         Self {
             camera_controler: data.start_camera.clone(),
-            control_rects: data.control_rects.clone(),
             hallways: data.hallways.clone(),
-            rooms:data.rooms.clone()
+            rooms: data.rooms.clone(),
         }
     }
 }
@@ -69,8 +96,17 @@ impl LevelState {
 impl Meshable for LevelState {
     fn mesh(&self) -> Vec<Mesh> {
         let mut meshes = vec![];
-        let mut rooms = self.rooms.iter().fold(vec![], |mut acc,room|{acc.append(&mut room.mesh());acc});
+        let mut rooms = self.rooms.iter().fold(vec![], |mut acc, room| {
+            acc.append(&mut room.mesh());
+            acc
+        });
+        //self.hallways.iter_mut().for_each(|hallway|{hallway.update_door_location(&self.rooms)});
+        let mut hallways = self.hallways.iter().fold(vec![], |mut acc, hallway| {
+            acc.append(&mut hallway.mesh());
+            acc
+        });
         meshes.append(&mut rooms);
+        meshes.append(&mut hallways);
         meshes
     }
 }

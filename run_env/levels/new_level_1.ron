@@ -21,8 +21,79 @@
             pitch: (0.0),
         ),
     ),
-    control_rects: {},
-    hallways: [],
+    hallways: [
+        (
+            start: (
+                position: (
+                    x: 0.70710677,
+                    y: 0.0,
+                    z: -0.70710677,
+                ),
+                rotation: (0.7853982),
+                size: (
+                    x: 1.0,
+                    y: 4.0,
+                ),
+            ),
+            start_texture: (
+                top: (
+                    id: (
+                        id: "default",
+                        width: 2.56,
+                        height: 2.56,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: TileScale(0.1, true),
+                    fliped: (false, false),
+                ),
+                bottom: (
+                    id: (
+                        id: "default",
+                        width: 2.56,
+                        height: 2.56,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: TileScale(0.1, true),
+                    fliped: (false, false),
+                ),
+                left: (
+                    id: (
+                        id: "default",
+                        width: 2.56,
+                        height: 2.56,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: TileScale(0.1, true),
+                    fliped: (false, false),
+                ),
+                right: (
+                    id: (
+                        id: "default",
+                        width: 2.56,
+                        height: 2.56,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: TileScale(0.1, true),
+                    fliped: (false, false),
+                ),
+            ),
+            middle: [],
+            end: (
+                position: (
+                    x: 19.5,
+                    y: 0.0,
+                    z: 0.86602545,
+                ),
+                rotation: (2.6179938),
+                size: (
+                    x: 1.0,
+                    y: 2.0,
+                ),
+            ),
+            start_location: None,
+            end_location: None,
+        ),
+    ],
     rooms: [
         (
             position: (
@@ -30,7 +101,7 @@
                 y: 0.0,
                 z: 0.0,
             ),
-            rotation: (0.0),
+            rotation: (0.7853982),
             walls: [
                 (
                     local_pos: (
@@ -38,9 +109,13 @@
                         y: -1.0,
                     ),
                     wall_texture: (
-                        id: "default",
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
                         offset: (0.0, 0.0),
-                        tile: (1.0, 1.0),
+                        tile: TileScale(0.1, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -50,9 +125,13 @@
                         y: -1.0,
                     ),
                     wall_texture: (
-                        id: "default",
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
                         offset: (0.0, 0.0),
-                        tile: (1.0, 1.0),
+                        tile: TileScale(0.1, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -62,9 +141,13 @@
                         y: 1.0,
                     ),
                     wall_texture: (
-                        id: "default",
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
                         offset: (0.0, 0.0),
-                        tile: (1.0, 1.0),
+                        tile: TileScale(0.1, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -74,9 +157,13 @@
                         y: 1.0,
                     ),
                     wall_texture: (
-                        id: "default",
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
                         offset: (0.0, 0.0),
-                        tile: (1.0, 1.0),
+                        tile: TileScale(0.1, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -85,38 +172,148 @@
                 3: (
                     wall: 0,
                     offset: (
-                        x: -0.5,
-                        y: 0.5,
+                        x: 0.0,
+                        y: 0.0,
                     ),
                     size: (
-                        x: 0.5,
-                        y: 0.5,
+                        x: 1.0,
+                        y: 4.0,
+                    ),
+                    vertical_alignment: Bottom,
+                    horizontal_alignment: Center,
+                ),
+            },
+            height: 5.0,
+            moddifiers: [],
+            floor_texture: (
+                id: (
+                    id: "default",
+                    width: 2.56,
+                    height: 2.56,
+                ),
+                offset: (0.0, 0.0),
+                tile: TileScale(0.1, true),
+                fliped: (false, false),
+            ),
+            roof_texture: (
+                id: (
+                    id: "default",
+                    width: 2.56,
+                    height: 2.56,
+                ),
+                offset: (0.0, 0.0),
+                tile: TileScale(0.1, true),
+                fliped: (false, false),
+            ),
+        ),
+        (
+            position: (
+                x: 20.0,
+                y: 0.0,
+                z: 0.0,
+            ),
+            rotation: (-1.0471976),
+            walls: [
+                (
+                    local_pos: (
+                        x: -1.0,
+                        y: -1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: TileScale(0.1, true),
+                        fliped: (false, false),
                     ),
                 ),
+                (
+                    local_pos: (
+                        x: 1.0,
+                        y: -1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: TileScale(0.1, true),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: 1.0,
+                        y: 1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: TileScale(0.1, true),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: -1.0,
+                        y: 1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "default",
+                            width: 2.56,
+                            height: 2.56,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: TileScale(0.1, true),
+                        fliped: (false, false),
+                    ),
+                ),
+            ],
+            doors: {
                 4: (
-                    wall: 0,
+                    wall: 3,
                     offset: (
                         x: 0.0,
                         y: 0.0,
                     ),
                     size: (
                         x: 1.0,
-                        y: 1.0,
+                        y: 2.0,
                     ),
+                    vertical_alignment: Bottom,
+                    horizontal_alignment: Center,
                 ),
             },
-            height: 5.0,
+            height: 3.0,
             moddifiers: [],
             floor_texture: (
-                id: "default",
+                id: (
+                    id: "default",
+                    width: 2.56,
+                    height: 2.56,
+                ),
                 offset: (0.0, 0.0),
-                tile: (1.0, 1.0),
+                tile: TileScale(0.1, true),
                 fliped: (false, false),
             ),
             roof_texture: (
-                id: "default",
+                id: (
+                    id: "default",
+                    width: 2.56,
+                    height: 2.56,
+                ),
                 offset: (0.0, 0.0),
-                tile: (1.0, 1.0),
+                tile: TileScale(0.1, true),
                 fliped: (false, false),
             ),
         ),

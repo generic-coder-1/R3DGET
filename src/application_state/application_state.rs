@@ -1,4 +1,4 @@
-use crate::{more_stolen_code::FileDialog, level::level::{LevelState, LevelData}};
+use crate::{more_stolen_code::FileDialog, level::level::{LevelState, LevelData}, renderer::texture::TextureData};
 use egui::{Context, FontFamily, FontId, RichText, vec2, Button, Color32};
 use egui_modal::Modal;
 use std::{path::PathBuf, collections::HashMap};
@@ -12,6 +12,7 @@ pub struct ApplicationState{
     screen_state: ScreenState,
     pub interacting_with_ui: bool,
     cursor_inside:bool,
+    default_tex:TextureData,
 }
 
 
@@ -41,7 +42,7 @@ pub enum EditorState{
 }
 
 impl ApplicationState {
-    pub fn new() -> Self {
+    pub fn new(tex_data:&TextureData) -> Self {
         Self {
             screen_state: ScreenState::MainMenu {
                 opened_file: None,
@@ -49,6 +50,7 @@ impl ApplicationState {
                 game_data: None,
                 create_new:false,
             },
+            default_tex:tex_data.clone(),
             cursor_inside:false,
             interacting_with_ui: true,
         }
@@ -154,7 +156,7 @@ impl ApplicationState {
                                         return acc;
                                     });
                                     game_data.levels.push(format!("new_level_{}",num+1));
-                                    game_data.levels_data.insert(format!("new_level_{}",num+1), LevelData::new(&("default".into())));
+                                    game_data.levels_data.insert(format!("new_level_{}",num+1), LevelData::new(&self.default_tex));
                                     possible_new_level_names.insert(format!("new_level_{}",num+1), format!("new_level_{}",num+1));
                                 }
                                 if ui.button("save").clicked(){
