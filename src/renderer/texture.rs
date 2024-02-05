@@ -1,7 +1,20 @@
 use anyhow::*;
 use image::GenericImageView;
+use serde::{Deserialize, Serialize};
 
 pub type TextureId = Box<str>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextureData{
+    pub id:TextureId,
+    pub width:f32,
+    pub height:f32,
+}
+impl TextureData{
+    pub fn new(tex:&Texture,id:TextureId)->Self{
+        Self { id, width:tex.texture.width() as f32/100., height: tex.texture.height() as f32/100. }
+    }
+}
 
 struct DefaultWrapper<'a>(wgpu::TextureViewDescriptor<'a>);
 

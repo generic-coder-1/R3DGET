@@ -2,14 +2,15 @@ use std::{collections::HashMap, marker::PhantomData, ops::Deref, vec};
 
 use cgmath::{Array, InnerSpace, Matrix2, MetricSpace, Rad, Vector2, Vector3};
 use earcutr;
-use geo::{
-    coord, BooleanOps, CoordsIter, MultiPolygon, Polygon, Rect,
-};
+use geo::{coord, BooleanOps, CoordsIter, MultiPolygon, Polygon, Rect};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use uid::IdU16;
 
-use super::mesh::{Mesh, MeshTex, MeshVertex, Meshable};
+use super::{
+    hallway::ControlRect,
+    mesh::{Mesh, MeshTex, MeshVertex, Meshable},
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Room {
@@ -28,9 +29,9 @@ impl Room {
         position: Vector3<f32>,
         rotation: Rad<f32>,
         height: f32,
-        floor_texture: &MeshTex,
-        roof_texture: &MeshTex,
-        wall_texture: &MeshTex,
+        floor_texture: MeshTex,
+        roof_texture: MeshTex,
+        wall_texture: MeshTex,
     ) -> Self {
         Self {
             position,
@@ -43,9 +44,41 @@ impl Room {
                 Wall::new([-1., 1.].into(), wall_texture.clone()),
             ],
             moddifiers: vec![],
-            doors:HashMap::new(),
+            doors: HashMap::new(),
             floor_texture: floor_texture.clone(),
             roof_texture: roof_texture.clone(),
+        }
+    }
+    pub fn new_door(&mut self, door: Door) -> DoorId {
+        let id = DoorId::new();
+        self.doors.insert(id.clone(), door);
+        id
+    }
+    pub fn get_control_rect(&self, id: &DoorId, away_from: bool) -> ControlRect {
+        let door = self.doors.get(id).expect("door doesn't exist");
+        let (start, end) = self
+            .walls
+            .iter()
+            .circular_tuple_windows::<(&Wall, &Wall)>()
+            .nth(door.wall)
+            .expect("Wall doesn't exist");
+        let (x, z) =
+            (Matrix2::from_angle(self.rotation) * ((start.local_pos + end.local_pos) / 2.)).into();
+        let y = 0.;
+
+        let position = Vector3::new(x, y, z) + self.position;
+
+        let wall_midpoint = Matrix2::from_angle(self.rotation) * (end.local_pos - start.local_pos);
+        let rotation = if away_from {
+            Vector2::unit_x().angle(wall_midpoint)
+        } else {
+            wall_midpoint.angle(Vector2::unit_x())
+        }
+        .0;
+        ControlRect {
+            position,
+            rotation:Rad(rotation),
+            size: door.size,
         }
     }
 }
@@ -99,42 +132,59 @@ impl Meshable for Room {
             .collect::<Vec<u16>>();
         let mut roof_indecies = floor_indices.clone();
         roof_indecies.reverse();
-        let roof_mesh_vertices = points.iter().fold(vec![], |mut acc, point| {
-            let mut position = (Matrix2::from_angle(self.rotation)
-                * Vector2 {
-                    x: point[0],
-                    y: point[1],
-                })
-            .extend(0.0);
-            position.swap_elements(1, 2);
-            position += self.position;
-            //position.swap_elements(1, 2);
-            acc.push(MeshVertex {
-                position: Into::<[f32; 3]>::into(position),
-                tex_coords: self.floor_texture.clone().get_tex_coords(
-                    top_right[0] - bottom_left[0],
-                    top_right[1] - bottom_left[1],
-                    point[0] - bottom_left[0],
-                    point[1] - bottom_left[1],
-                ),
+        let points3 = points
+            .iter()
+            .map(|point2| {
+                let mut posititon = (Matrix2::from_angle(self.rotation)
+                    * Vector2 {
+                        x: point2[0],
+                        y: point2[1],
+                    })
+                .extend(0.0);
+                posititon.swap_elements(1, 2);
+                posititon += self.position;
+                posititon
+            })
+            .collect_vec();
+        let roof_tex_coords = self.roof_texture.get_tex_coords(
+            &points3
+                .iter()
+                .map(|point| Into::<(f32, f32)>::into(point.xz()))
+                .collect_vec(),
+        );
+        let roof_mesh_vertices = points3
+            .iter()
+            .enumerate()
+            .fold(vec![], |mut acc, (i, point)| {
+                acc.push(MeshVertex {
+                    position: Into::<[f32; 3]>::into(*point),
+                    tex_coords: roof_tex_coords[i],
+                });
+                acc
             });
-            acc
-        });
+        let floor_tex_coords = self.floor_texture.get_tex_coords(
+            &points3
+                .iter()
+                .map(|point| Into::<(f32, f32)>::into(point.xz()))
+                .collect_vec(),
+        );
         let floor_mesh_vertices = roof_mesh_vertices
             .iter()
-            .map(|mesh_vertes| {
+            .enumerate()
+            .map(|(i, mesh_vertes)| {
                 let mut new = mesh_vertes.clone();
                 new.position[1] += self.height;
+                new.tex_coords = floor_tex_coords[i];
                 new
             })
             .collect::<Vec<MeshVertex>>();
         let floor = Mesh {
-            textrure: self.floor_texture.id.clone(),
+            textrure: self.floor_texture.id.id.clone(),
             vertices: floor_mesh_vertices,
             indices: floor_indices,
         };
         let roof = Mesh {
-            textrure: self.roof_texture.id.clone(),
+            textrure: self.roof_texture.id.id.clone(),
             vertices: roof_mesh_vertices,
             indices: roof_indecies,
         };
@@ -165,46 +215,63 @@ impl Meshable for Room {
                     top_right.to_vec(),
                     vec![0., top_right[1]],
                 ];
-                let mut holes = doors.iter().fold(MultiPolygon::new(vec![]),|acc,door: &&Door|{
-                    let rect = Rect::new(
-                        coord! {x:(top_right[0] - door.size.x) / 2. + door.offset.x,y:(top_right[1] - door.size.y) / 2. + door.offset.y},
-                        coord! {x:(top_right[0] + door.size.x) / 2. + door.offset.x,y:(top_right[1] + door.size.y) / 2. + door.offset.y},
-                    );
-                    acc.union(&MultiPolygon::new(vec![Polygon::from(rect)]))
-                }).into_iter().map(|polygon|{
-                    polygon.exterior_coords_iter().map(|coord|{vec![coord.x,coord.y]}).collect_vec()
-                }).collect_vec();
+                let mut holes = doors
+                    .iter()
+                    .fold(MultiPolygon::new(vec![]), |acc, door: &&Door| {
+                        let rect = door.to_rect(top_right[0], top_right[1]);
+                        acc.union(&MultiPolygon::new(vec![Polygon::from(rect)]))
+                    })
+                    .into_iter()
+                    .map(|polygon| {
+                        polygon
+                            .exterior_coords_iter()
+                            .map(|coord| vec![coord.x, coord.y])
+                            .collect_vec()
+                    })
+                    .collect_vec();
                 let mut temp_input = vec![wall_points];
                 temp_input.append(&mut holes);
                 let (e_points, e_holes, dim) = earcutr::flatten(&temp_input);
                 let wall_indecies = earcutr::earcut(e_points.as_slice(), &e_holes, dim)
                     .expect("wall didn't earcut properly :(");
-                let wall_mesh = e_points.into_iter().tuples::<(f32, f32)>().fold(
-                    Mesh {
-                        textrure: wall_1.wall_texture.id.clone(),
-                        vertices: vec![],
-                        indices: wall_indecies
-                            .into_iter()
-                            .map(|usize| usize as u16)
-                            .collect_vec(),
-                    },
-                    |mut acc, point2| {
+
+                let points3 = e_points
+                    .iter()
+                    .tuples::<(_, _)>()
+                    .map(|point2| {
                         let y = point2.1 + self.position.y;
-                        let x = point2.0 * dir.x + wall_1.local_pos.x + self.position.x;
-                        let z = point2.0 * dir.y + wall_1.local_pos.y + self.position.z;
-                        let position = [x, y, z];
-                        acc.vertices.push(MeshVertex {
-                            position: position,
-                            tex_coords: wall_1.wall_texture.get_tex_coords(
-                                top_right[0],
-                                top_right[1],
-                                point2.0,
-                                point2.1,
-                            ),
-                        });
-                        acc
-                    },
-                );
+                        let (mut x, mut z) = (Matrix2::from_angle(self.rotation)
+                            * (*point2.0 * dir + wall_1.local_pos))
+                            .into();
+                        x += self.position.x;
+                        z += self.position.z;
+                        let position = Vector3::new(x, y, z);
+                        position
+                    })
+                    .collect_vec();
+
+                let wall_tex_coords = wall_1.wall_texture.get_tex_coords(&e_points.iter().tuples::<(_,_)>().map(|a|{(*a.0,*a.1)}).collect_vec());//points3.iter().map(|point|{Into::<[f32;2]>::into(point.xy())}).collect_vec();
+
+                let wall_mesh = points3
+                    .into_iter()
+                    .enumerate()
+                    .fold(
+                        Mesh {
+                            textrure: wall_1.wall_texture.id.id.clone(),
+                            vertices: vec![],
+                            indices: wall_indecies
+                                .into_iter()
+                                .map(|usize| usize as u16)
+                                .collect_vec(),
+                        },
+                        |mut acc, (i, point)| {
+                            acc.vertices.push(MeshVertex {
+                                position: point.into(),
+                                tex_coords: wall_tex_coords[i],
+                            });
+                            acc
+                        },
+                    );
                 meshs.push(wall_mesh);
             });
 
@@ -249,6 +316,43 @@ pub struct Door {
     pub wall: usize,
     pub offset: Vector2<f32>,
     pub size: Vector2<f32>,
+    pub vertical_alignment: VerticalAlign,
+    pub horizontal_alignment: HorizontalAlign,
+}
+
+impl Door {
+    pub fn to_rect(&self, width: f32, height: f32) -> Rect<f32> {
+        let (top, bottom) = match self.vertical_alignment {
+            VerticalAlign::Top => (height + self.offset.y, height + self.offset.y - self.size.y),
+            VerticalAlign::Center => (
+                height / 2. + self.offset.y + self.size.y / 2.,
+                height / 2. + self.offset.y - self.size.y / 2.,
+            ),
+            VerticalAlign::Bottom => (self.offset.y + self.size.y, self.offset.y),
+        };
+        let (left, right) = match self.horizontal_alignment {
+            HorizontalAlign::Left => (self.offset.x, self.offset.x + self.size.x),
+            HorizontalAlign::Center => (
+                width / 2. + self.offset.x - self.size.x / 2.,
+                width / 2. + self.offset.x + self.size.x / 2.,
+            ),
+            HorizontalAlign::Right => (width + self.offset.x - self.size.x, width + self.offset.x),
+        };
+        Rect::new(coord! {x:right,y:top}, coord! {x:left,y:bottom})
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum VerticalAlign {
+    Top,
+    Center,
+    Bottom,
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum HorizontalAlign {
+    Left,
+    Center,
+    Right,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]

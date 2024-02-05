@@ -25,7 +25,7 @@ use crate::{
         level::{LevelData, LevelState},
         mesh::{Mesh, Meshable},
     },
-    renderer::camera::Camera,
+    renderer::{camera::Camera, texture::TextureData},
 };
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
@@ -61,10 +61,11 @@ pub async fn run() {
             .expect("Couldn't append canvas to document body.");
     }
 
-    let mut application_state = ApplicationState::new();
-
+    
     let mut render_state: State = State::new(window, vec![], vec![]).await;
-    let mut level = LevelData::new(&("default".into()));
+    let default_tex = TextureData::new(&render_state.default_texture, "default".into());
+    let mut application_state = ApplicationState::new(&default_tex);
+    let mut level = LevelData::new(&default_tex);
     level.start_camera = camer_control::CameraController::new(
         4.0,
         0.4,
