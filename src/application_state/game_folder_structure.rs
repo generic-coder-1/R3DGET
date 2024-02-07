@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fs::{self, create_dir, read, read_dir, read_to_string},
-    path::{Path, PathBuf}, io::{Cursor, BufReader},
+    path::{Path, PathBuf}, io::{Cursor, BufReader}
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

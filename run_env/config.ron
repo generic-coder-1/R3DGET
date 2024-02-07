@@ -1,5 +1,3 @@
 (
-    level_order: [
-        "new_level_1",
-    ],
+    level_order: [],
 )
