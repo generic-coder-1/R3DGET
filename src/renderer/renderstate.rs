@@ -356,7 +356,7 @@ impl State {
                 label: Some("Render Encoder"),
             });
         {
-            let mut mesh_map: HashMap<Box<str>, Mesh> = HashMap::new();
+            let mut mesh_map: HashMap<TextureId, Mesh> = HashMap::new();
             meshs.into_iter().for_each(|mesh| {
                 if let Some(mesh_to_add_to) = mesh_map.get_mut(&mesh.textrure) {
                     let vertices_already_in = mesh_to_add_to.vertices.len() as u16;

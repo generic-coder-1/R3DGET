@@ -49,7 +49,7 @@ impl Mesh {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MeshTex {
+pub struct MeshTex{
     pub id: TextureData,
     pub offset: [f32; 2],
     pub tile: TileStyle,

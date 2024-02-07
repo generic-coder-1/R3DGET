@@ -5,20 +5,24 @@ use serde::{Deserialize, Serialize};
 pub type TextureId = Box<str>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TextureData{
-    pub id:TextureId,
-    pub width:f32,
-    pub height:f32,
+pub struct TextureData {
+    pub id: TextureId,
+    pub width: f32,
+    pub height: f32,
 }
-impl TextureData{
-    pub fn new(tex:&Texture,id:TextureId)->Self{
-        Self { id, width:tex.texture.width() as f32/100., height: tex.texture.height() as f32/100. }
+impl TextureData {
+    pub fn new(tex: &Texture, id: TextureId) -> Self {
+        Self {
+            id,
+            width: tex.texture.width() as f32 / 100.,
+            height: tex.texture.height() as f32 / 100.,
+        }
     }
 }
 
-struct DefaultWrapper<'a>(wgpu::TextureViewDescriptor<'a>);
+struct DefaultWrapper(wgpu::TextureViewDescriptor<'static>);
 
-impl<'a> Default for DefaultWrapper<'a> {
+impl Default for DefaultWrapper {
     fn default() -> Self {
         Self(wgpu::TextureViewDescriptor {
             label: Default::default(),
@@ -33,7 +37,7 @@ impl<'a> Default for DefaultWrapper<'a> {
     }
 }
 
-pub fn default_texture_view_descriptor<'a>() -> wgpu::TextureViewDescriptor<'a> {
+pub fn default_texture_view_descriptor() -> wgpu::TextureViewDescriptor<'static> {
     DefaultWrapper::default().0
 }
 pub struct Texture {

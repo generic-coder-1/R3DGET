@@ -1,8 +1,6 @@
-use std::f32::consts::PI;
-
 use crate::level::mesh::MeshTex;
 
-use cgmath::{Array, Basis2, Matrix2, MetricSpace, Rad, Rotation, Rotation2, Vector2, Vector3};
+use cgmath::{Array, Basis2, MetricSpace, Rad, Rotation, Rotation2, Vector2, Vector3};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -84,8 +82,8 @@ impl HallWayTexData {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DoorLocation {
-    room_index: usize,
-    door_id: DoorId,
+    pub room_index: usize,
+    pub door_id: DoorId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
