@@ -1,4 +1,4 @@
-use std::{collections::HashMap, marker::PhantomData, ops::Deref, vec};
+use std::{collections::HashMap, f32::consts::PI, marker::PhantomData, ops::Deref, vec};
 
 use cgmath::{
     num_traits::Signed, Array, Basis2, InnerSpace, Matrix2, MetricSpace, Rad, Rotation, Rotation2,
@@ -318,6 +318,14 @@ pub enum Modifier {
         height: f32,
         floor_texture: MeshTex,
     },
+    Disc {
+        pos: Vector3<f32>,
+        size: Vector3<f32>,
+        sides: Vec<MeshTex>,
+        dir: Rad<f32>,
+        top_tex: MeshTex,
+        bottom_tex: MeshTex,
+    },
 }
 
 impl Modifier {
@@ -529,7 +537,7 @@ impl Modifier {
                 {
                     floor_indices.reverse();
                 }
-                if *on_roof{
+                if *on_roof {
                     floor_indices.reverse();
                 }
                 let floor_mesh = Mesh {
@@ -567,13 +575,15 @@ impl Modifier {
                         let wall_points = vec![
                             [0., 0.],
                             [top_right[0], 0.],
-                            Into::<[f32;2]>::into(top_right),
+                            Into::<[f32; 2]>::into(top_right),
                             [0., top_right[1]],
                         ];
                         let points3 = wall_points
                             .iter()
                             .map(|point2| {
-                                let y = point2[1] + true_position.y + if *on_roof{room_height-height}else{0.};
+                                let y = point2[1]
+                                    + true_position.y
+                                    + if *on_roof { room_height - height } else { 0. };
                                 let (mut x, mut z) = (Matrix2::from_angle(true_dir)
                                     * (point2[0] * dir + wall_1.local_pos))
                                     .into();
@@ -585,17 +595,14 @@ impl Modifier {
                             .collect_vec();
 
                         let wall_tex_coords = wall_1.wall_texture.get_tex_coords(
-                            &wall_points
-                                .iter()
-                                .map(|a| (a[0], a[1]))
-                                .collect_vec(),
+                            &wall_points.iter().map(|a| (a[0], a[1])).collect_vec(),
                         );
 
                         let wall_mesh = points3.into_iter().enumerate().fold(
                             Mesh {
                                 textrure: wall_1.wall_texture.id.id.clone(),
                                 vertices: vec![],
-                                indices: vec![0,3,2,0,2,1],
+                                indices: vec![0, 3, 2, 0, 2, 1],
                             },
                             |mut acc, (i, point)| {
                                 acc.vertices.push(MeshVertex {
@@ -606,6 +613,124 @@ impl Modifier {
                             },
                         );
                         meshs.push(wall_mesh);
+                    });
+            }
+            Modifier::Disc {
+                pos,
+                size,
+                sides,
+                dir,
+                top_tex,
+                bottom_tex,
+            } => {
+                let flat_points = sides
+                    .iter()
+                    .enumerate()
+                    .map(|(side, _)| {
+                        let a = (
+                            ((side as f32 / sides.len() as f32) * 2. * PI).cos() * size.x,
+                            ((side as f32 / sides.len() as f32) * 2. * PI).sin() * size.z,
+                        );
+                        Basis2::from_angle(*dir)
+                            .rotate_vector(Vector2::new(a.0, a.1))
+                            .into()
+                    })
+                    .collect_vec();
+                let mut flat_indecies = earcut(
+                    flat_points
+                        .iter()
+                        .map(|a: &(f32, f32)| vec![a.0, a.1])
+                        .flatten()
+                        .collect_vec()
+                        .as_slice(),
+                    &[],
+                    2,
+                )
+                .expect("disk didn't earcut properly :(")
+                .into_iter()
+                .map(|usize| usize as u16)
+                .collect_vec();
+                let top_tex_points = top_tex.get_tex_coords(&flat_points);
+                let bottom_tex_points = bottom_tex.get_tex_coords(&flat_points);
+                let bottom = Mesh {
+                    textrure: bottom_tex.id.id.clone(),
+                    vertices: flat_points
+                        .iter()
+                        .enumerate()
+                        .map(|(i, point)| MeshVertex {
+                            position: {
+                                let mut position =
+                                    Vector3::new(point.0, size.y / -2., point.1) + *pos;
+                                position = Basis2::from_angle(true_dir)
+                                    .rotate_vector(position.xz())
+                                    .extend(position.y);
+                                position.swap_elements(1, 2);
+                                position += true_position;
+                                position.into()
+                            },
+                            tex_coords: bottom_tex_points[i],
+                        })
+                        .collect_vec(),
+                    indices: flat_indecies.clone(),
+                };
+                flat_indecies.reverse();
+                let top = Mesh {
+                    textrure: top_tex.id.id.clone(),
+                    vertices: flat_points
+                        .iter()
+                        .enumerate()
+                        .map(|(i, point)| MeshVertex {
+                            position: {
+                                let mut position =
+                                    Vector3::new(point.0, size.y / 2., point.1) + *pos;
+                                position = Basis2::from_angle(true_dir)
+                                    .rotate_vector(position.xz())
+                                    .extend(position.y);
+                                position.swap_elements(1, 2);
+                                position += true_position;
+                                position.into()
+                            },
+                            tex_coords: top_tex_points[i],
+                        })
+                        .collect_vec(),
+                    indices: flat_indecies.clone(),
+                };
+                meshs.append(&mut vec![top, bottom]);
+                flat_points
+                    .iter()
+                    .circular_tuple_windows()
+                    .enumerate()
+                    .for_each(|(i, (point1, point2))| {
+                        let side_distance = Vector2::new(point1.0, point1.1)
+                            .distance(Vector2::new(point2.0, point2.1));
+                        let side_tex_points = sides[i].get_tex_coords(&vec![
+                            (0., pos.y - size.y / 2.),
+                            (side_distance, pos.y - size.y / 2.),
+                            (side_distance, pos.y + size.y / 2.),
+                            (0., pos.y + size.y / 2.),
+                        ]);
+                        let side = Mesh{
+                            textrure: sides[i].id.id.clone(),
+                            vertices: [
+                                Vector3::new(point1.0, - size.y / 2., point1.1),
+                                Vector3::new(point2.0, - size.y / 2., point2.1),
+                                Vector3::new(point2.0,  size.y / 2., point2.1),
+                                Vector3::new(point1.0,  size.y / 2., point1.1),
+                            ].into_iter().enumerate().map(|(i,point)|{
+                                MeshVertex{
+                                    position: {
+                                        let mut position = point + pos;
+                                        position = Basis2::from_angle(true_dir).rotate_vector(position.xz()).extend(position.y);
+                                        position.swap_elements(1, 2);
+                                        position += true_position;
+                                        position.into()
+                                    },
+                                    tex_coords: side_tex_points[i],
+                                }
+                            }).collect_vec(),
+                            indices: vec![2,1,0,3,2,0],
+                        };
+                        meshs.push(side);
                     });
             }
         };
