@@ -2,8 +2,9 @@ use crate::{
     camer_control::CameraController,
     renderer::{camera::Camera, texture::TextureData},
 };
-
+use std::f32::consts::PI;
 use cgmath::{Point3, Rad, Vector2, Vector3};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -168,6 +169,14 @@ impl LevelData {
             on_roof: true,
             height: 1.,
             floor_texture: defualt_mesh_tex.clone(),
+        });
+        rooms[0].moddifiers.push(super::room::Modifier::Disc {
+            pos: Vector3::new(3., 3., 3.),
+            size: Vector3::new(1., 0.5, 2.),
+            sides: (0..4).into_iter().map(|_| defualt_mesh_tex.clone()).collect_vec(),
+            dir: Rad(- PI / 4.),
+            top_tex: defualt_mesh_tex.clone(),
+            bottom_tex: defualt_mesh_tex.clone(),
         });
         Self {
             start_camera: CameraController::new(
