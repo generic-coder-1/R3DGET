@@ -25,10 +25,12 @@ pub struct Room {
     pub moddifiers: Vec<Modifier>,
     pub floor_texture: MeshTex,
     pub roof_texture: MeshTex,
+    pub name:String,
 }
 
 impl Room {
     pub fn new(
+        name:String,
         position: Vector3<f32>,
         rotation: Rad<f32>,
         height: f32,
@@ -37,6 +39,7 @@ impl Room {
         wall_texture: MeshTex,
     ) -> Self {
         Self {
+            name,
             position,
             height,
             rotation,

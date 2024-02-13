@@ -17,15 +17,16 @@ env_logger = "0.10"
 pollster = "0.3"
 log = "0.4"
 tobj = { version = "3.2", features = ["async"]}
-wgpu = { version = "0.18"}
+wgpu = { version = "0.19.1"}
 winit = {version = "0.29.4", features = ["rwh_05"]}
 instant = "0.1"
 native-dialog = "0.7.0"
-egui = "0.24.1"
+egui = "0.26.1"
+egui_extras = { version = "0.26.1", features = ["all_loaders"] }
 serde = { version = "1.0.193", features = ["derive"] }
 ron = "0.8.1"
-egui-modal = "0.3.1"
-egui_dnd = "0.5.1"
+egui-modal = "0.3.4"
+egui_dnd = "0.7.0"
 gltf = "1.4.0"
 uid = "0.1.7"
 earcutr = "0.4.3"
@@ -33,7 +34,7 @@ itertools = "0.12.0"
 geo = "0.27.0"
 
 [dependencies.egui-wgpu]
-version = "0.24.1"
+version = "0.26.1"
 default-features = true
 features = ["winit"]
 
@@ -47,7 +48,7 @@ features = ["png", "jpeg"]
 reqwest = { version = "0.11" }
 console_error_panic_hook = "0.1"
 console_log = "1.0"
-wgpu = { version = "0.18", features = ["webgl"]}
+wgpu = { version = "0.19.1", features = ["webgl"]}
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = [

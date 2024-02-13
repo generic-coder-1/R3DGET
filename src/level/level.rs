@@ -39,6 +39,7 @@ impl LevelData {
         );
         let mut rooms = vec![
             Room::new(
+                "default_room_1".into(),
                 [0., 0., 0.].into(),
                 Rad(0.1),
                 5.,
@@ -47,6 +48,7 @@ impl LevelData {
                 defualt_mesh_tex.clone(),
             ),
             Room::new(
+                "default_room_2".into(),
                 [0., 0., 20.].into(),
                 Rad(0.),
                 3.,
@@ -204,6 +206,9 @@ impl LevelState {
             hallways: data.hallways.clone(),
             rooms: data.rooms.clone(),
         }
+    }
+    pub fn update(&mut self){
+        self.hallways.iter_mut().for_each(|hallway|{hallway.update_door_location(&self.rooms)});
     }
 }
 

@@ -35,7 +35,7 @@ impl HallWay {
             self.start = rooms[location.room_index].get_control_rect(&location.door_id, true);
         }
         if let Some(location) = &self.end_location {
-            self.start = rooms[location.room_index].get_control_rect(&location.door_id, false);
+            self.end = rooms[location.room_index].get_control_rect(&location.door_id, false);
         }
     }
 }
