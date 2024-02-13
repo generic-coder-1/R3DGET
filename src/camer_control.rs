@@ -79,6 +79,14 @@ impl CameraController {
             _ => false,
         }
     }
+    pub fn remove_velocity(&mut self){
+        self.amount_up = 0.;
+        self.amount_down = 0.;
+        self.amount_forward = 0.;
+        self.amount_backward = 0.;
+        self.amount_left = 0.;
+        self.amount_right = 0.;
+    }
 
     pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64) {
         self.rotate_horizontal = mouse_dx as f32;

@@ -94,7 +94,7 @@ impl GameData {
                 if let Some(filepath) = entry.ok() {
                     if filepath
                         .path()
-                        .has_extension(&["png", "jpg", "jpeg", "gif", "bmp"])
+                        .has_extension(&["png", "jpg", "jpeg"])
                     {
                         textures.push((
                             filepath
@@ -139,51 +139,6 @@ impl GameData {
             levels,
             levels_data,
         })
-    }
-    pub async fn load_model_gltf(
-        file_name: &str
-    ) -> anyhow::Result<bool> {
-        let gltf_text = load_string(file_name).await?;
-        let gltf_cursor = Cursor::new(gltf_text);
-        let gltf_reader = BufReader::new(gltf_cursor);
-        let gltf = Gltf::from_reader(gltf_reader)?;
-    
-        let mut buffer_data = Vec::new();
-    for buffer in gltf.buffers() {
-        match buffer.source() {
-            gltf::buffer::Source::Bin => {
-                // if let Some(blob) = gltf.blob.as_deref() {
-                //     buffer_data.push(blob.into());
-                //     println!("Found a bin, saving");
-                // };
-            }
-            gltf::buffer::Source::Uri(uri) => {
-                let bin = load_binary(uri).await?;
-                buffer_data.push(bin);
-            }
-        }
-    }
-
-    for scene in gltf.scenes() {
-        for node in scene.nodes() {
-            let mesh = node.mesh().expect("Got mesh");
-            let primitives = mesh.primitives();
-            primitives.for_each(|primitive| {
-
-                let reader = primitive.reader(|buffer| Some(&buffer_data[buffer.index()]));
-
-                if let Some(vertex_attibute) = reader.read_positions().map(|v| {
-                    dbg!(v);
-                }) {
-                    // Save the position here using mapped vertex_attribute result
-                }
-            });
-        }
-    }
-
-    Ok(true)
-
-    
     }
 }
 

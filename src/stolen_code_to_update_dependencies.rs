@@ -323,6 +323,7 @@ impl Platform {
                                         pressed,
                                         modifiers: winit_to_egui_modifiers(self.modifier_state),
                                         repeat: false,
+                                        physical_key: Some(key),
                                     });
                                 }
                             }
@@ -474,7 +475,7 @@ fn winit_to_egui_key_code(key: KeyCode) -> Option<egui::Key> {
         KeyCode::KeyY => Key::Y,
         KeyCode::KeyZ => Key::Z,
         KeyCode::Minus => Key::Minus,
-        KeyCode::Equal => Key::PlusEquals,
+        KeyCode::Equal => Key::Equals,
         _ => {
             return None;
         }

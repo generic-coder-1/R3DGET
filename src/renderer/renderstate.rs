@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::{
-    camer_control::CameraController, level::mesh::Mesh, plagerized_code_to_update_dependencies,
+    camer_control::CameraController, level::mesh::Mesh, stolen_code_to_update_dependencies,
 };
 
 use super::{
@@ -10,10 +10,10 @@ use super::{
 };
 use cgmath::SquareMatrix;
 use egui::FullOutput;
-use egui_wgpu::{renderer::ScreenDescriptor, Renderer};
+use egui_wgpu::{Renderer, ScreenDescriptor};
 use instant::Duration;
-use plagerized_code_to_update_dependencies::Platform;
-use wgpu::{util::DeviceExt, Buffer, TextureFormat};
+use stolen_code_to_update_dependencies::Platform;
+use wgpu::{util::DeviceExt, Buffer, SurfaceTargetUnsafe, TextureFormat};
 use winit::window::Window;
 
 #[repr(C)]
@@ -45,7 +45,7 @@ struct MeshPass {
 }
 
 pub struct State {
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
@@ -72,7 +72,7 @@ impl State {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
-        let surface = unsafe { instance.create_surface(&window) }.unwrap();
+        let surface = unsafe { instance.create_surface_unsafe(SurfaceTargetUnsafe::from_window(&window).unwrap()) }.unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -85,13 +85,13 @@ impl State {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::TEXTURE_BINDING_ARRAY | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING,
-                    limits: if cfg!(target_arch = "wasm32") {
+                    label: None,
+                    required_features: wgpu::Features::TEXTURE_BINDING_ARRAY | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING,
+                    required_limits: if cfg!(target_arch = "wasm32") {
                         wgpu::Limits::downlevel_webgl2_defaults()
                     } else {
                         wgpu::Limits::default()
                     },
-                    label: None,
                 },
                 None, // Trace path
             )
@@ -112,6 +112,7 @@ impl State {
             present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
+            desired_maximum_frame_latency: 2,
         };
         surface.configure(&device, &config);
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -483,6 +484,7 @@ impl State {
                 paint_jobs.as_slice(),
                 &screen_descriptor,
             );
+
             tdelta.set.iter().for_each(|(id, image_delta)| {
                 ui_renderer.update_texture(&self.device, &self.queue, *id, image_delta);
             });

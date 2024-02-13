@@ -1,10 +1,21 @@
-use crate::{more_stolen_code::FileDialog, level::level::{LevelState, LevelData}, renderer::texture::TextureData};
+use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, Meshable}, room::Room}, more_stolen_code::FileDialog, stolen_code_to_update_dependencies, renderer::{self, camera::Camera, texture::TextureData}};
 use egui::{Context, FontFamily, FontId, RichText, vec2, Button, Color32};
 use egui_modal::Modal;
-use std::{path::PathBuf, collections::HashMap};
-use winit::{event::{WindowEvent, ElementState, MouseButton, DeviceEvent, KeyEvent}, keyboard::{PhysicalKey, KeyCode}};
+use instant::Instant;
+use std::{collections::HashMap, fmt::format, path::PathBuf};
+use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use egui_dnd;
-
+use cgmath::{Point3, Rad};
+use egui::FontDefinitions;
+use stolen_code_to_update_dependencies::{Platform, PlatformDescriptor};
+use renderer::renderstate::State;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+use winit::{
+    event::*,
+    event_loop::EventLoop,
+    window::{Fullscreen, Window, WindowBuilder},
+};
 
 use super::game_folder_structure::GameData;
 
@@ -13,6 +24,10 @@ pub struct ApplicationState{
     pub interacting_with_ui: bool,
     cursor_inside:bool,
     default_tex:TextureData,
+    render_state:State,
+    level_state:LevelState,
+    last_render_time:Instant,
+    platform:Platform,
 }
 
 
@@ -42,7 +57,49 @@ pub enum EditorState{
 }
 
 impl ApplicationState {
-    pub fn new(tex_data:&TextureData) -> Self {
+    pub async fn new(event_loop:&EventLoop<()>) -> Self {
+        let window = WindowBuilder::new().build(&event_loop).unwrap();
+        window.set_title("REDG3T");
+        window.set_theme(Some(winit::window::Theme::Dark));
+    
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::dpi::PhysicalSize;
+            window.set_inner_size(PhysicalSize::new(1280, 720));
+    
+            use winit::platform::web::WindowExtWebSys;
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    let dst = doc.get_element_by_id("wasm-example")?;
+                    let canvas = web_sys::Element::from(window.canvas());
+                    dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
+    
+        
+        let render_state: State = State::new(window, vec![], vec![]).await;
+        let default_tex = TextureData::new(&render_state.default_texture, "default".into());
+        let mut level = LevelData::new(&default_tex);
+        level.start_camera = camer_control::CameraController::new(
+            4.0,
+            0.4,
+            Camera::new(Point3::new(0.0, 0.0, -10.0), Rad(0.0), Rad(0.0)),
+        );
+        let level_state = LevelState::from_level_data(&level);
+    
+        let size = render_state.size;
+        let platform = Platform::new(PlatformDescriptor {
+            physical_width: size.width,
+            physical_height: size.height,
+            scale_factor: render_state.window().scale_factor(),
+            font_definitions: FontDefinitions::default(),
+            style: Default::default(),
+        });
+    
+        let last_render_time = instant::Instant::now();
         Self {
             screen_state: ScreenState::MainMenu {
                 opened_file: None,
@@ -50,9 +107,13 @@ impl ApplicationState {
                 game_data: None,
                 create_new:false,
             },
-            default_tex:tex_data.clone(),
+            default_tex:default_tex,
             cursor_inside:false,
             interacting_with_ui: true,
+            render_state,
+            last_render_time,
+            level_state,
+            platform,
         }
     }
     pub fn ui(&mut self, ctx: &Context) {
@@ -207,34 +268,50 @@ impl ApplicationState {
                                 });
                             });
                         });
-                        
                     },  
                     EditorState::LevelEditing{
                         selected_level,
                     }=>{
-                        //Wwaaaaaaaaaaaa
+                        let level = &mut self.level_state;
+                        egui::SidePanel::left("selector").show_animated(ctx,self.interacting_with_ui, |ui|{
+                            egui::ScrollArea::new([false,true]).show(ui, |ui|{
+                                ui.collapsing(RichText::new("Rooms").heading(), |ui|{
+                                    level.rooms.iter().for_each(|room|{
+                                        ui.collapsing(format!("Room: {}",&room.name), |ui|{
+                                            room.moddifiers.iter().for_each(|moddifier|{
+                                                ui.label(match &moddifier{
+                                                    crate::level::room::Modifier::Ramp { .. } => "Ramp",
+                                                    crate::level::room::Modifier::Cliff { .. } => "Extend",
+                                                    crate::level::room::Modifier::Disc { .. } => "Platform",
+                                                });
+                                            })
+                                        });
+                                    });
+                                });
+                            });
+                        });
                     }
                 }
             },
         }
     }
-    pub fn input_device(&mut self, event: &DeviceEvent, level_state:&mut LevelState){
+    pub fn input_device(&mut self, event: &DeviceEvent, ){
         match event {
             DeviceEvent::MouseMotion { delta }=>{
                 if !self.interacting_with_ui && self.cursor_inside{
-                    level_state.camera_controler.process_mouse(delta.0, delta.1);
+                    self.level_state.camera_controler.process_mouse(delta.0, delta.1);
                 }
             },
             _ =>{},
         }
     }
-    pub fn input_window(&mut self, event: &WindowEvent, level_state:&mut LevelState, is_event_captured:bool) {
+    pub fn input_window(&mut self, event: &WindowEvent, is_event_captured:bool) {
         //Load new level into level_sate
         {
             if let ApplicationState{screen_state:ScreenState::Editor { editor_state,game_data,..},..} = self{
                 if let EditorState::LevelSelection { selected_level:Some(selected_level),.. } = editor_state.clone() {
                     *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone() };
-                    *level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
+                    self.level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
                 }
             }
         }
@@ -248,11 +325,12 @@ impl ApplicationState {
             WindowEvent::KeyboardInput{event:KeyEvent{state,physical_key,..},..}=>{
                 if let PhysicalKey::Code(key_code) = physical_key{
                     if !self.interacting_with_ui{
-                        level_state.camera_controler.process_keybord(key_code, state);
+                        self.level_state.camera_controler.process_keybord(key_code, state);
                     }
                     match key_code {
                         KeyCode::Escape=>{
                             self.interacting_with_ui = true;
+                            self.level_state.camera_controler.remove_velocity();
                         }
                         _=>{}
                     }
@@ -265,6 +343,112 @@ impl ApplicationState {
                 }
             }
             _=>{},
+        }
+    }
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
+    pub async fn run(mut self, event_loop:EventLoop<()>) {
+        cfg_if::cfg_if! {
+            if #[cfg(target_arch = "wasm32")] {
+                std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+                console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
+            } else {
+                env_logger::init();
+            }
+        }
+        
+        egui_extras::install_image_loaders(&self.platform.context());
+        let _ = event_loop.run(move |winit_event, control_flow| {
+            let is_event_captured = self.platform.captures_event(&winit_event);
+            self.platform.handle_event(&winit_event);
+            self.render_state
+                .window()
+                .set_cursor_visible(self.interacting_with_ui);
+            match winit_event {
+                Event::DeviceEvent { event, .. } => {
+                    self.input_device(&event);
+                }
+                Event::WindowEvent {
+                    ref event,
+                    window_id,
+                } if window_id == self.render_state.window().id() => {
+                    self.input_window(event, is_event_captured);
+                    match event {
+                        WindowEvent::CloseRequested => control_flow.exit(),
+                        WindowEvent::Resized(physical_size) => {
+                            self.render_state.resize(*physical_size);
+                        }
+                        WindowEvent::ScaleFactorChanged { .. } => {
+                            self.render_state.resize(self.render_state.window().inner_size());
+                        }
+                        _ => {}
+                    }
+                    if let WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: ElementState::Pressed,
+                                physical_key: PhysicalKey::Code(KeyCode::F11),
+                                ..
+                            },
+                        ..
+                    } = event
+                    {
+                        self.render_state.window().toggle_fullscreen();
+                    }
+                    if *event == WindowEvent::RedrawRequested {
+                        let now = instant::Instant::now();
+                        let dt = now - self.last_render_time;
+                        self.last_render_time = now;
+    
+                        self.platform.begin_frame();
+    
+                        let full_output = {
+                            let ctx = self.platform.context();
+                            self.ui(&ctx);
+                            ctx.end_frame()
+                        };
+                        
+                        self.render_state.update(dt, &mut self.level_state.camera_controler);
+                        self.level_state.update();
+                        let meshs: Vec<Mesh> = self.level_state.mesh();
+                        if self.render_state.window().is_visible().unwrap_or(true){
+                            match self.render_state.render(meshs, full_output, &self.platform) {
+                                Ok(_) => {}
+                                Err(wgpu::SurfaceError::Lost) => self.render_state.resize(self.render_state.size),
+                                Err(wgpu::SurfaceError::OutOfMemory) => control_flow.exit(),
+                                Err(e) => eprintln!("{:?}", e),
+                            }
+                    }
+                    }
+                }
+                _ => {}
+            }
+            self.render_state.window().request_redraw();
+        });
+    }
+}
+
+
+
+
+
+trait WindowFullScreen {
+    fn toggle_fullscreen(&self);
+}
+
+impl WindowFullScreen for Window {
+    fn toggle_fullscreen(&self) {
+        if self.fullscreen().is_some() {
+            self.set_fullscreen(None);
+        } else {
+            self.current_monitor().map(|monitor| {
+                monitor.video_modes().next().map(|video_mode| {
+                    if cfg!(any(target_os = "macos", unix)) {
+                        self.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                    } else {
+                        self.set_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
+                    }
+                })
+            });
         }
     }
 }
