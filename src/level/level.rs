@@ -176,7 +176,7 @@ impl LevelData {
             pos: Vector3::new(3., 3., 3.),
             size: Vector3::new(1., 0.5, 2.),
             sides: (0..4).into_iter().map(|_| defualt_mesh_tex.clone()).collect_vec(),
-            dir: Rad(- PI / 4.),
+            dir: Rad(PI/4.),
             top_tex: defualt_mesh_tex.clone(),
             bottom_tex: defualt_mesh_tex.clone(),
         });

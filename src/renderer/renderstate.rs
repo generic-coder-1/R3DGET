@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use crate::{
     camer_control::CameraController, level::mesh::Mesh, stolen_code_to_update_dependencies,
 };
@@ -309,9 +309,9 @@ impl State {
         &self.window
     }
 
-    pub fn create_texture(&self, file_path: &str) -> Texture {
+    pub fn create_texture(&self, data: Arc<[u8]>) -> Texture {
         let diffuse_image = image::load_from_memory(
-            &std::fs::read(file_path).expect("couldn't load file for texture"),
+            data.as_ref(),
         )
         .expect("file couldn't be decoded as an image");
         Texture::from_image(&self.device, &self.queue, &diffuse_image, None)
