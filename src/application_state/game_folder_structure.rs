@@ -1,14 +1,10 @@
 use crate::{level::level::LevelData, renderer::texture::TextureId};
 use anyhow::Ok;
-use gltf::Gltf;
 use ron::ser::PrettyConfig;
 use serde::{Deserialize, Serialize};
 use cfg_if::cfg_if;
 use std::{
-    collections::HashMap,
-    ffi::OsStr,
-    fs::{self, create_dir, read, read_dir, read_to_string},
-    path::{Path, PathBuf}, io::{Cursor, BufReader}
+    collections::HashMap, ffi::OsStr, fs::{self, create_dir, read, read_dir, read_to_string}, path::{Path, PathBuf}, sync::Arc
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -29,9 +25,10 @@ pub struct GameData {
     pub config_file: GameConfigFile,
     pub levels: Vec<String>,
     pub levels_data: HashMap<String, LevelData>,
-    pub textures: Vec<(TextureId, Box<[u8]>, Box<str>)>,
+    pub textures: Vec<(TextureId, Arc<[u8]>, Box<str>)>,
     pub current_level: Option<String>,
 }
+
 
 impl GameData {
     pub fn new() -> Self {
@@ -85,7 +82,7 @@ impl GameData {
         Ok(())
     }
     pub fn generate(path: &PathBuf) -> Option<Self> {
-        let mut textures: Vec<(TextureId, Box<[u8]>, Box<str>)> = vec![];
+        let mut textures: Vec<(TextureId, Arc<[u8]>, Box<str>)> = vec![];
 
         read_dir(path.join("textures"))
             .ok()?
@@ -104,7 +101,7 @@ impl GameData {
                                 .into_boxed_str(),
                             read(filepath.path())
                                 .expect("file can't be read for some reason :(")
-                                .into_boxed_slice(),
+                                .into_boxed_slice().into(),
                             filepath
                                 .path()
                                 .extension()

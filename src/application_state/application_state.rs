@@ -1,10 +1,10 @@
-use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, Meshable}, room::Room}, more_stolen_code::FileDialog, stolen_code_to_update_dependencies, renderer::{self, camera::Camera, texture::TextureData}};
-use egui::{Context, FontFamily, FontId, RichText, vec2, Button, Color32};
+use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::DoorId}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
+use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, ImageSource, RichText, ScrollArea, Ui};
 use egui_modal::Modal;
 use instant::Instant;
-use std::{collections::HashMap, fmt::format, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, path::PathBuf};
 use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
-use egui_dnd;
+use egui_dnd::{self};
 use cgmath::{Point3, Rad};
 use egui::FontDefinitions;
 use stolen_code_to_update_dependencies::{Platform, PlatformDescriptor};
@@ -21,17 +21,18 @@ use super::game_folder_structure::GameData;
 
 pub struct ApplicationState{
     screen_state: ScreenState,
-    pub interacting_with_ui: bool,
+    interacting_with_ui: bool,
     cursor_inside:bool,
     default_tex:TextureData,
     render_state:State,
     level_state:LevelState,
     last_render_time:Instant,
     platform:Platform,
+    screen_state_callbacks:Vec<Box<dyn FnOnce(&mut ScreenState)>>
 }
 
 
-pub enum ScreenState {
+enum ScreenState {
     MainMenu {
         opened_file: Option<PathBuf>,
         open_file_dialog: Option<FileDialog>,
@@ -46,13 +47,33 @@ pub enum ScreenState {
 }
 
 #[derive(Clone)]
-pub enum EditorState{
+enum EditorState{
     LevelSelection{
         possible_new_level_names:HashMap<String,String>,
         selected_level:Option<String>,
     },
     LevelEditing{
         selected_level:String,
+        selected_item:Option<SelectedItem>,
+    },
+}
+
+
+#[derive(Clone)]
+enum SelectedItem{
+    Room{
+        index:usize,
+    },
+    Modifer{
+        room_index:usize,
+        modifer_index:usize,
+    },
+    Door{
+        room_index:usize,
+        door_id:DoorId,
+    },
+    HallWay{
+        hallway_index:usize,
     },
 }
 
@@ -107,6 +128,7 @@ impl ApplicationState {
                 game_data: None,
                 create_new:false,
             },
+            screen_state_callbacks:vec![],
             default_tex:default_tex,
             cursor_inside:false,
             interacting_with_ui: true,
@@ -118,6 +140,9 @@ impl ApplicationState {
     }
     pub fn ui(&mut self, ctx: &Context) {
         if let ScreenState::MainMenu { opened_file:Some(folder_path), game_data:Some(game_data),.. } = &self.screen_state{
+            game_data.textures.iter().for_each(|(name,data,_)|{
+                self.render_state.textures.insert(name.clone(), self.render_state.create_texture(data.clone()));
+            });
             self.screen_state = ScreenState::Editor{
                 editor_state:EditorState::LevelSelection{
                     selected_level:None,
@@ -197,7 +222,6 @@ impl ApplicationState {
                 });
             }
             ScreenState::Editor { editor_state, game_data, folder_path } => {
-                
                 match editor_state{
                     EditorState::LevelSelection{
                         possible_new_level_names,
@@ -271,30 +295,143 @@ impl ApplicationState {
                     },  
                     EditorState::LevelEditing{
                         selected_level,
+                        selected_item,
                     }=>{
                         let level = &mut self.level_state;
+                        egui::TopBottomPanel::top("tool bar").show_animated(ctx, self.interacting_with_ui, |ui|{
+                            ui.horizontal(|ui|{
+                                let mut add_button = |text:&str|{
+                                    ui.add(Button::new(text).frame(false))
+                                };
+                                if add_button("main_menu").clicked(){
+                                    self.screen_state_callbacks.push(Box::new(|screen_state|{
+                                        *screen_state = ScreenState::MainMenu { opened_file: None, open_file_dialog: None, game_data: None, create_new: false }
+                                    }));
+                                }
+                            });
+                        });
                         egui::SidePanel::left("selector").show_animated(ctx,self.interacting_with_ui, |ui|{
                             egui::ScrollArea::new([false,true]).show(ui, |ui|{
-                                ui.collapsing(RichText::new("Rooms").heading(), |ui|{
-                                    level.rooms.iter().for_each(|room|{
+                                CollapsingHeader::new(RichText::new("Rooms").heading()).default_open(true).show(ui, |ui|{
+                                    level.rooms.iter().enumerate().for_each(|(i,room)|{
                                         ui.collapsing(format!("Room: {}",&room.name), |ui|{
-                                            room.moddifiers.iter().for_each(|moddifier|{
-                                                ui.label(match &moddifier{
-                                                    crate::level::room::Modifier::Ramp { .. } => "Ramp",
-                                                    crate::level::room::Modifier::Cliff { .. } => "Extend",
-                                                    crate::level::room::Modifier::Disc { .. } => "Platform",
-                                                });
-                                            })
+                                            if ui.label("Room").clicked(){
+                                                self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                    if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
+                                                        *selected_item = Some(SelectedItem::Room { index: i });
+                                                    };
+                                                }));
+                                            }
+                                            ui.collapsing("Modifers", |ui|{
+                                                room.moddifiers.iter().enumerate().for_each(|(j,moddifier)|{
+                                                    if ui.label(match &moddifier{
+                                                        crate::level::room::Modifier::Ramp { .. } => "Ramp",
+                                                        crate::level::room::Modifier::Cliff { .. } => "Extend",
+                                                        crate::level::room::Modifier::Disc { .. } => "Platform",
+                                                    }).clicked(){
+                                                        self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                            if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
+                                                                *selected_item = Some(SelectedItem::Modifer { room_index: i,modifer_index:j });
+                                                            }
+                                                        }));
+                                                    };
+                                                })
+                                            });
+                                            ui.collapsing("Doors", |ui|{
+                                                room.doors.keys().for_each(|id|{
+                                                    if ui.label(format!("Id:{}",id.0.get())).clicked(){
+                                                        let a =id.clone();
+                                                        self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                            if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
+                                                                *selected_item = Some(SelectedItem::Door { room_index: i, door_id: a });
+                                                            }
+                                                        }));
+                                                    };
+                                                })
+                                            });
                                         });
                                     });
                                 });
+                                CollapsingHeader::new(RichText::new("Hallways").heading()).default_open(true).show(ui,|ui|{
+                                    level.hallways.iter().enumerate().for_each(|(i,hallway)|{
+                                        if ui.label(format!("Hallway {}\n  Start: {}\n  End: {}",
+                                            i+1, 
+                                            match &hallway.start_location{
+                                                Some(location)=>{
+                                                    format!("\n    Room: {}\n    Door:{:?}",level.rooms[location.room_index].name,location.door_id.0.get())
+                                                },
+                                                None=>{"None".into()}
+                                            }, 
+                                            match &hallway.end_location{
+                                                Some(location)=>{
+                                                    format!("\n    Room: {}\n     Door:{:?}",level.rooms[location.room_index].name,location.door_id.0.get())
+                                                },
+                                                None=>{"None".into()}
+                                            }, 
+                                        )).clicked(){
+                                            self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
+                                                    *selected_item = Some(SelectedItem::HallWay { hallway_index: i });
+                                                };
+                                            }));
+                                        };
+                                    })
+                                })
+                            });
+                        });         
+                        let get_egui_image_sorce = |texture_id:&TextureId|->ImageSource{
+                            if let Some((name,data,exetension)) = game_data.textures.iter().find(|a|a.0 == *texture_id){
+                                ImageSource::Bytes { uri: Cow::Owned(format!("bytes://{}.{}",name,exetension)), bytes: egui::load::Bytes::Shared(data.clone()) }
+                            }else{
+                                egui::include_image!("..\\renderer\\default.png")
+                            }
+                        };
+                        let add_texture_controls = |ui:&mut Ui,name:&str,texture:&mut MeshTex|{
+                            ui.collapsing(name,|ui|{
+                                ui.menu_button(format!("Id: {}",texture.id.id), |ui|{
+                                    game_data.textures.iter().for_each(|(name,_,_)|{
+                                        if ui.add(Button::image_and_text(egui::Image::new(get_egui_image_sorce(&name)), name.as_ref())).clicked(){
+                                            texture.id.id = name.clone();
+                                        }
+                                    });
+                                });
+                                ui.label(format!("Id: {}",texture.id.id));
+                                ui.collapsing("Offset", |ui|{
+                                    add_drag_value(ui, "X:", &mut texture.offset[0], 0.1);
+                                    add_drag_value(ui, "Y:", &mut texture.offset[1], 0.1);
+                                });
+                                ui.add(egui::Image::new(get_egui_image_sorce(&texture.id.id)).max_width(100.));
+                            });
+                        };
+                        egui::SidePanel::right("editor").resizable(true).show_animated(ctx, self.interacting_with_ui, |ui|{
+                            ScrollArea::new([false,true]).show(ui, |ui|{
+                                if let Some(selected_item) = selected_item{
+                                    match selected_item{
+                                        SelectedItem::Room { index } => {
+                                            let room = level.rooms.get_mut(*index).unwrap();
+                                            ui.add(egui::Label::new(format!("Name: {} ",room.name)).wrap(false));
+                                            add_drag_value(ui,"X:",&mut room.position.x,0.1);
+                                            add_drag_value(ui,"Y:",&mut room.position.y,0.1);
+                                            add_drag_value(ui,"Z:",&mut room.position.z,0.1);
+                                            add_drag_value(ui,"Rot:",&mut room.rotation.0,0.01);
+                                            add_texture_controls(ui, "Floor texture",&mut room.floor_texture);
+                                        },
+                                        SelectedItem::Modifer { room_index, modifer_index } => {},
+                                        SelectedItem::Door { room_index, door_id } => {},
+                                        SelectedItem::HallWay { hallway_index } => {},
+                                    }
+                                }
                             });
                         });
                     }
                 }
             },
         }
+        self.screen_state_callbacks.drain(..).for_each(|callback|{
+            callback(&mut self.screen_state);
+        })
     }
+    
     pub fn input_device(&mut self, event: &DeviceEvent, ){
         match event {
             DeviceEvent::MouseMotion { delta }=>{
@@ -310,7 +447,7 @@ impl ApplicationState {
         {
             if let ApplicationState{screen_state:ScreenState::Editor { editor_state,game_data,..},..} = self{
                 if let EditorState::LevelSelection { selected_level:Some(selected_level),.. } = editor_state.clone() {
-                    *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone() };
+                    *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone(),selected_item:None };
                     self.level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
                 }
             }
@@ -417,7 +554,7 @@ impl ApplicationState {
                                 Err(wgpu::SurfaceError::OutOfMemory) => control_flow.exit(),
                                 Err(e) => eprintln!("{:?}", e),
                             }
-                    }
+                        }
                     }
                 }
                 _ => {}
@@ -441,14 +578,15 @@ impl WindowFullScreen for Window {
             self.set_fullscreen(None);
         } else {
             self.current_monitor().map(|monitor| {
-                monitor.video_modes().next().map(|video_mode| {
-                    if cfg!(any(target_os = "macos", unix)) {
-                        self.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
-                    } else {
-                        self.set_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
-                    }
-                })
+                self.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
             });
         }
     }
+}
+
+fn add_drag_value<T>(ui:&mut Ui,name:&str, value:&mut T,speed:f64)where T:emath::Numeric{
+    ui.horizontal(|ui|{
+        ui.label(name);
+        ui.add(DragValue::new(value).speed(speed))
+    });
 }

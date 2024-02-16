@@ -131,13 +131,13 @@ impl Meshable for Room {
 
         points = input_data.remove(0);
 
-        let floor_indices = earcutr::earcut(&e_points, &[], dim)
+        let roof_indecies = earcutr::earcut(&e_points, &[], dim)
             .expect("floor didn't earcut properly :(")
             .into_iter()
             .map(|usize| usize as u16)
             .collect::<Vec<u16>>();
-        let mut roof_indecies = floor_indices.clone();
-        roof_indecies.reverse();
+        let mut floor_indices = roof_indecies.clone();
+        floor_indices.reverse();
         let points3 = points
             .iter()
             .map(|point2| {
@@ -158,7 +158,7 @@ impl Meshable for Room {
                 .map(|point| Into::<(f32, f32)>::into(point.xz()))
                 .collect_vec(),
         );
-        let roof_mesh_vertices = points3
+        let floor_mesh_vertices = points3
             .iter()
             .enumerate()
             .fold(vec![], |mut acc, (i, point)| {
@@ -174,7 +174,7 @@ impl Meshable for Room {
                 .map(|point| Into::<(f32, f32)>::into(point.xz()))
                 .collect_vec(),
         );
-        let floor_mesh_vertices = roof_mesh_vertices
+        let roof_mesh_vertices: Vec<MeshVertex> = floor_mesh_vertices
             .iter()
             .enumerate()
             .map(|(i, mesh_vertes)| {
@@ -631,10 +631,10 @@ impl Modifier {
                     .enumerate()
                     .map(|(side, _)| {
                         let a = (
-                            ((side as f32 / sides.len() as f32) * 2. * PI).cos() * size.x,
-                            ((side as f32 / sides.len() as f32) * 2. * PI).sin() * size.z,
+                            ((side as f32 / sides.len() as f32) * 2. * PI + PI/4.).cos() * size.x,
+                            ((side as f32 / sides.len() as f32) * 2. * PI + PI/4.).sin() * size.z,
                         );
-                        Basis2::from_angle(*dir)
+                        Basis2::from_angle(*dir - Rad(PI/4.))
                             .rotate_vector(Vector2::new(a.0, a.1))
                             .into()
                     })
@@ -785,8 +785,8 @@ pub enum HorizontalAlign {
     Right,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct DoorId(uid::IdU16<PhantomData<Door>>);
+#[derive(Debug, Clone, Hash, PartialEq, Eq,Copy)]
+pub struct DoorId(pub uid::IdU16<PhantomData<Door>>);
 
 impl DoorId {
     pub fn new() -> Self {
