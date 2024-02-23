@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
 use crate::{
     camer_control::CameraController, level::mesh::Mesh, stolen_code_to_update_dependencies,
 };
+use std::{collections::HashMap, sync::Arc};
 
 use super::{
     camera::{self, Camera, Projection},
@@ -72,7 +72,10 @@ impl State {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
-        let surface = unsafe { instance.create_surface_unsafe(SurfaceTargetUnsafe::from_window(&window).unwrap()) }.unwrap();
+        let surface = unsafe {
+            instance.create_surface_unsafe(SurfaceTargetUnsafe::from_window(&window).unwrap())
+        }
+        .unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -243,7 +246,7 @@ impl State {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -310,10 +313,8 @@ impl State {
     }
 
     pub fn create_texture(&self, data: Arc<[u8]>) -> Texture {
-        let diffuse_image = image::load_from_memory(
-            data.as_ref(),
-        )
-        .expect("file couldn't be decoded as an image");
+        let diffuse_image =
+            image::load_from_memory(data.as_ref()).expect("file couldn't be decoded as an image");
         Texture::from_image(&self.device, &self.queue, &diffuse_image, None)
             .expect("trouble turning into texture")
     }
