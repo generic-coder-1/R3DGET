@@ -1,10 +1,15 @@
 use crate::{level::level::LevelData, renderer::texture::TextureId};
 use anyhow::Ok;
+use cfg_if::cfg_if;
+use itertools::Itertools;
 use ron::ser::PrettyConfig;
 use serde::{Deserialize, Serialize};
-use cfg_if::cfg_if;
 use std::{
-    collections::HashMap, ffi::OsStr, fs::{self, create_dir, read, read_dir, read_to_string}, path::{Path, PathBuf}, sync::Arc
+    collections::HashMap,
+    ffi::OsStr,
+    fs::{self, create_dir, read, read_dir, read_to_string},
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -29,7 +34,6 @@ pub struct GameData {
     pub current_level: Option<String>,
 }
 
-
 impl GameData {
     pub fn new() -> Self {
         Self {
@@ -44,8 +48,7 @@ impl GameData {
         self.config_file.level_order = self.levels.clone();
     }
 
-    pub fn update_folder(&self,path:PathBuf)->anyhow::Result<()>{
-        
+    pub fn update_folder(&self, path: PathBuf) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -89,19 +92,18 @@ impl GameData {
             .into_iter()
             .for_each(|entry| {
                 if let Some(filepath) = entry.ok() {
-                    if filepath
-                        .path()
-                        .has_extension(&["png", "jpg", "jpeg"])
-                    {
+                    if filepath.path().has_extension(&["png", "jpg", "jpeg"]) {
+                        let texture_fullname = filepath
+                            .file_name()
+                            .into_string()
+                            .expect("non-unicode charecter in file name")
+                            .to_string();
                         textures.push((
-                            filepath
-                                .file_name()
-                                .into_string()
-                                .expect("non-unicode charecter in file name")
-                                .into_boxed_str(),
+                            texture_fullname.split(".").collect_vec()[0].into(),
                             read(filepath.path())
                                 .expect("file can't be read for some reason :(")
-                                .into_boxed_slice().into(),
+                                .into_boxed_slice()
+                                .into(),
                             filepath
                                 .path()
                                 .extension()

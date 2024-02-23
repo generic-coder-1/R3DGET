@@ -417,12 +417,19 @@ impl ApplicationState {
                                     borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[1]);
                                 });
                                 ui.collapsing("Tile Mode", |ui|{
-                                    match &mut texture.tile {
-                                        crate::level::mesh::TileStyle::TileSpecific(x, y) => {
+                                    ui.horizontal(|ui|{
+                                        ui.label("Specfifc Tile");
+                                        toggle_ui(ui, &mut texture.tile.is_specific);
+                                        ui.label("Scale Tile");
+                                    });
+                                    match &mut texture.tile.is_specific {
+                                        true=>{
+                                            let crate::level::mesh::TileSpecific(x,y)=&mut texture.tile.specific;
                                             add_drag_value(ui, "X:", x, 0.1);
                                             add_drag_value(ui, "Y:", y, 0.1);
-                                        },
-                                        crate::level::mesh::TileStyle::TileScale(scale, global) => {
+                                        }
+                                        false=>{
+                                            let crate::level::mesh::TileScale(scale,global)=&mut texture.tile.scale;
                                             add_drag_value(ui, "Scale:", scale, 0.1);
                                             toggle_ui(ui, global);
                                         },
