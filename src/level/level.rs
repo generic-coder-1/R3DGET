@@ -35,7 +35,7 @@ impl LevelData {
     pub fn new(default_tex_id: &TextureData) -> Self {
         let defualt_mesh_tex = MeshTex::new(
             default_tex_id.clone(),
-            super::mesh::TileStyle::TileScale(1., true),
+            super::mesh::TileStyle::tile_scale(1., true),
         );
         let mut rooms = vec![
             Room::new(

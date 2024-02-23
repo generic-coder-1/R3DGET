@@ -78,22 +78,22 @@ impl MeshTex {
         .bounding_rect()
         .unwrap();
 
-        let helper_closure: Box<dyn Fn(&f32, &f32) -> [f32; 2]> = match self.tile {
-            TileStyle::TileSpecific(x_tiles, y_tiles) => Box::new(move |x, y| {
+        let helper_closure: Box<dyn Fn(&f32, &f32) -> [f32; 2]> = match self.tile.get_result() {
+            TileResultThing::TileSpecific(TileSpecific(x_tiles, y_tiles)) => Box::new(move |x, y| {
                 [
                     (if !self.fliped[0] {
-                        bounds.width() * x_tiles - (x + bounds.min().x + self.offset[0])
+                        bounds.width() / x_tiles - (x - bounds.min().x + self.offset[0])
                     } else {
-                        x + bounds.min().x + self.offset[0]
-                    } / (bounds.width() * x_tiles)),
+                        x - bounds.min().x + self.offset[0]
+                    } / (bounds.width() / x_tiles)),
                     (if !self.fliped[1] {
-                        bounds.height() * y_tiles - (y + bounds.min().y + self.offset[1])
+                        bounds.height() / y_tiles - (y - bounds.min().y + self.offset[1])
                     } else {
-                        y + bounds.min().y + self.offset[1]
-                    } / (bounds.height() * y_tiles)),
+                        y - bounds.min().y + self.offset[1]
+                    } / (bounds.height() / y_tiles)),
                 ]
             }),
-            TileStyle::TileScale(scale, global) => match global {
+            TileResultThing::TileScale(TileScale(scale, global)) => match global {
                 true => Box::new(move |x: &f32, y: &f32| {
                     [
                         (if !self.fliped[0] { -x } else { *x } + self.offset[0])
@@ -118,8 +118,64 @@ impl MeshTex {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TileStyle {
-    TileSpecific(f32, f32),
-    TileScale(f32, bool),
+pub enum TileResultThing{
+    TileSpecific(TileSpecific),
+    TileScale(TileScale),
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TileSpecific(pub f32, pub f32);
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TileScale(pub f32, pub bool);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TileStyle{
+    pub specific:TileSpecific,
+    pub scale:TileScale,
+    pub is_specific:bool
+}
+
+impl TileStyle{
+    pub fn new(aurgh:TileResultThing)->Self{
+        match aurgh {
+            TileResultThing::TileSpecific(a) => {
+                Self{
+                    specific: a,
+                    scale: TileScale(0.1, true),
+                    is_specific: true,
+                }
+            },
+            TileResultThing::TileScale(a) => {
+                Self{
+                    specific: TileSpecific(10., 10.),
+                    scale: a,
+                    is_specific:false,
+                }
+            },
+        }
+    }
+    pub fn tile_scale(a: f32,b: bool)->Self{
+        Self{
+            specific: TileSpecific(10., 10.),
+            scale: TileScale(a, b),
+            is_specific:false,
+        }
+    }
+    pub fn tile_specific(a: f32,b: f32)->Self{
+        Self{
+            specific: TileSpecific(a, b),
+            scale: TileScale(0.1, true),
+            is_specific:true,
+        }
+    }
+    pub fn get_result(&self)->TileResultThing{
+        if self.is_specific{
+            TileResultThing::TileSpecific(self.specific.clone())
+        }else{
+            TileResultThing::TileScale(self.scale.clone())
+        }
+    }
+}
+
+
+
