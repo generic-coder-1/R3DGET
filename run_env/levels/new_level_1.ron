@@ -39,41 +39,37 @@
                 top: (
                     id: (
                         id: "default",
-                        width: 10.0,
-                        height: 10.0,
+                        ratio: 1.0,
                     ),
                     offset: (0.0, 0.0),
-                    tile: TileScale(0.1, true),
+                    tile: TileScale(1.0, true),
                     fliped: (false, false),
                 ),
                 bottom: (
                     id: (
                         id: "default",
-                        width: 10.0,
-                        height: 10.0,
+                        ratio: 1.0,
                     ),
                     offset: (0.0, 0.0),
-                    tile: TileScale(0.1, true),
+                    tile: TileScale(1.0, true),
                     fliped: (false, false),
                 ),
                 left: (
                     id: (
                         id: "default",
-                        width: 10.0,
-                        height: 10.0,
+                        ratio: 1.0,
                     ),
                     offset: (0.0, 0.0),
-                    tile: TileScale(0.1, true),
+                    tile: TileScale(1.0, true),
                     fliped: (false, false),
                 ),
                 right: (
                     id: (
                         id: "default",
-                        width: 10.0,
-                        height: 10.0,
+                        ratio: 1.0,
                     ),
                     offset: (0.0, 0.0),
-                    tile: TileScale(0.1, true),
+                    tile: TileScale(1.0, true),
                     fliped: (false, false),
                 ),
             ),
@@ -117,11 +113,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -133,11 +128,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -149,11 +143,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -165,11 +158,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -181,11 +173,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -197,11 +188,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -213,11 +203,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -229,11 +218,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -270,31 +258,28 @@
                     ramp_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                     bottom_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -308,11 +293,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -324,11 +308,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -340,11 +323,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -356,11 +338,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -370,11 +351,10 @@
                     floor_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -388,11 +368,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -404,11 +383,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -420,11 +398,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -436,11 +413,10 @@
                             wall_texture: (
                                 id: (
                                     id: "default",
-                                    width: 10.0,
-                                    height: 10.0,
+                                    ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
-                                tile: TileScale(0.1, true),
+                                tile: TileScale(1.0, true),
                                 fliped: (false, false),
                             ),
                         ),
@@ -450,11 +426,10 @@
                     floor_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -466,70 +441,64 @@
                     ),
                     size: (
                         x: 1.0,
-                        y: 1.0,
+                        y: 0.5,
                         z: 2.0,
                     ),
                     sides: [
                         (
                             id: (
                                 id: "default",
-                                width: 10.0,
-                                height: 10.0,
+                                ratio: 1.0,
                             ),
                             offset: (0.0, 0.0),
-                            tile: TileScale(0.1, true),
+                            tile: TileScale(1.0, true),
                             fliped: (false, false),
                         ),
                         (
                             id: (
                                 id: "default",
-                                width: 10.0,
-                                height: 10.0,
+                                ratio: 1.0,
                             ),
                             offset: (0.0, 0.0),
-                            tile: TileScale(0.1, true),
+                            tile: TileScale(1.0, true),
                             fliped: (false, false),
                         ),
                         (
                             id: (
                                 id: "default",
-                                width: 10.0,
-                                height: 10.0,
+                                ratio: 1.0,
                             ),
                             offset: (0.0, 0.0),
-                            tile: TileScale(0.1, true),
+                            tile: TileScale(1.0, true),
                             fliped: (false, false),
                         ),
                         (
                             id: (
                                 id: "default",
-                                width: 10.0,
-                                height: 10.0,
+                                ratio: 1.0,
                             ),
                             offset: (0.0, 0.0),
-                            tile: TileScale(0.1, true),
+                            tile: TileScale(1.0, true),
                             fliped: (false, false),
                         ),
                     ],
-                    dir: (-0.7853982),
+                    dir: (0.7853982),
                     top_tex: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                     bottom_tex: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -537,21 +506,19 @@
             floor_texture: (
                 id: (
                     id: "default",
-                    width: 10.0,
-                    height: 10.0,
+                    ratio: 1.0,
                 ),
                 offset: (0.0, 0.0),
-                tile: TileScale(0.1, true),
+                tile: TileScale(1.0, true),
                 fliped: (false, false),
             ),
             roof_texture: (
                 id: (
                     id: "default",
-                    width: 10.0,
-                    height: 10.0,
+                    ratio: 1.0,
                 ),
                 offset: (0.0, 0.0),
-                tile: TileScale(0.1, true),
+                tile: TileScale(1.0, true),
                 fliped: (false, false),
             ),
             name: "default_room_1",
@@ -572,11 +539,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -588,11 +554,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -604,11 +569,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -620,11 +584,10 @@
                     wall_texture: (
                         id: (
                             id: "default",
-                            width: 10.0,
-                            height: 10.0,
+                            ratio: 1.0,
                         ),
                         offset: (0.0, 0.0),
-                        tile: TileScale(0.1, true),
+                        tile: TileScale(1.0, true),
                         fliped: (false, false),
                     ),
                 ),
@@ -649,21 +612,19 @@
             floor_texture: (
                 id: (
                     id: "default",
-                    width: 10.0,
-                    height: 10.0,
+                    ratio: 1.0,
                 ),
                 offset: (0.0, 0.0),
-                tile: TileScale(0.1, true),
+                tile: TileScale(1.0, true),
                 fliped: (false, false),
             ),
             roof_texture: (
                 id: (
                     id: "default",
-                    width: 10.0,
-                    height: 10.0,
+                    ratio: 1.0,
                 ),
                 offset: (0.0, 0.0),
-                tile: TileScale(0.1, true),
+                tile: TileScale(1.0, true),
                 fliped: (false, false),
             ),
             name: "default_room_2",

@@ -25,12 +25,12 @@ pub struct Room {
     pub moddifiers: Vec<Modifier>,
     pub floor_texture: MeshTex,
     pub roof_texture: MeshTex,
-    pub name:String,
+    pub name: String,
 }
 
 impl Room {
     pub fn new(
-        name:String,
+        name: String,
         position: Vector3<f32>,
         rotation: Rad<f32>,
         height: f32,
@@ -158,32 +158,32 @@ impl Meshable for Room {
                 .map(|point| Into::<(f32, f32)>::into(point.xz()))
                 .collect_vec(),
         );
+        let roof_mesh_vertices: Vec<MeshVertex> = points3
+        .iter()
+        .enumerate()
+        .fold(vec![], |mut acc, (i, point)| {
+            acc.push(MeshVertex {
+                position: Into::<[f32; 3]>::into(*point + Vector3::new(0., self.height, 0.)),
+                tex_coords: roof_tex_coords[i],
+            });
+            acc
+        });
+        let floor_tex_coords = self.floor_texture.get_tex_coords(
+            &points3
+            .iter()
+            .map(|point| Into::<(f32, f32)>::into(point.xz()))
+            .collect_vec(),
+        );
         let floor_mesh_vertices = points3
             .iter()
             .enumerate()
             .fold(vec![], |mut acc, (i, point)| {
                 acc.push(MeshVertex {
                     position: Into::<[f32; 3]>::into(*point),
-                    tex_coords: roof_tex_coords[i],
+                    tex_coords: floor_tex_coords[i],
                 });
                 acc
             });
-        let floor_tex_coords = self.floor_texture.get_tex_coords(
-            &points3
-                .iter()
-                .map(|point| Into::<(f32, f32)>::into(point.xz()))
-                .collect_vec(),
-        );
-        let roof_mesh_vertices: Vec<MeshVertex> = floor_mesh_vertices
-            .iter()
-            .enumerate()
-            .map(|(i, mesh_vertes)| {
-                let mut new = mesh_vertes.clone();
-                new.position[1] += self.height;
-                new.tex_coords = floor_tex_coords[i];
-                new
-            })
-            .collect::<Vec<MeshVertex>>();
         let floor = Mesh {
             textrure: self.floor_texture.id.id.clone(),
             vertices: floor_mesh_vertices,
@@ -631,10 +631,10 @@ impl Modifier {
                     .enumerate()
                     .map(|(side, _)| {
                         let a = (
-                            ((side as f32 / sides.len() as f32) * 2. * PI + PI/4.).cos() * size.x,
-                            ((side as f32 / sides.len() as f32) * 2. * PI + PI/4.).sin() * size.z,
+                            ((side as f32 / sides.len() as f32) * 2. * PI + PI / 4.).cos() * size.x,
+                            ((side as f32 / sides.len() as f32) * 2. * PI + PI / 4.).sin() * size.z,
                         );
-                        Basis2::from_angle(*dir - Rad(PI/4.))
+                        Basis2::from_angle(*dir - Rad(PI / 4.))
                             .rotate_vector(Vector2::new(a.0, a.1))
                             .into()
                     })
@@ -712,26 +712,30 @@ impl Modifier {
                             (side_distance, pos.y + size.y / 2.),
                             (0., pos.y + size.y / 2.),
                         ]);
-                        let side = Mesh{
+                        let side = Mesh {
                             textrure: sides[i].id.id.clone(),
                             vertices: [
-                                Vector3::new(point1.0, - size.y / 2., point1.1),
-                                Vector3::new(point2.0, - size.y / 2., point2.1),
-                                Vector3::new(point2.0,  size.y / 2., point2.1),
-                                Vector3::new(point1.0,  size.y / 2., point1.1),
-                            ].into_iter().enumerate().map(|(i,point)|{
-                                MeshVertex{
-                                    position: {
-                                        let mut position = point + pos;
-                                        position = Basis2::from_angle(true_dir).rotate_vector(position.xz()).extend(position.y);
-                                        position.swap_elements(1, 2);
-                                        position += true_position;
-                                        position.into()
-                                    },
-                                    tex_coords: side_tex_points[i],
-                                }
-                            }).collect_vec(),
-                            indices: vec![2,1,0,3,2,0],
+                                Vector3::new(point1.0, -size.y / 2., point1.1),
+                                Vector3::new(point2.0, -size.y / 2., point2.1),
+                                Vector3::new(point2.0, size.y / 2., point2.1),
+                                Vector3::new(point1.0, size.y / 2., point1.1),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, point)| MeshVertex {
+                                position: {
+                                    let mut position = point + pos;
+                                    position = Basis2::from_angle(true_dir)
+                                        .rotate_vector(position.xz())
+                                        .extend(position.y);
+                                    position.swap_elements(1, 2);
+                                    position += true_position;
+                                    position.into()
+                                },
+                                tex_coords: side_tex_points[i],
+                            })
+                            .collect_vec(),
+                            indices: vec![2, 1, 0, 3, 2, 0],
                         };
                         meshs.push(side);
                     });
@@ -785,7 +789,7 @@ pub enum HorizontalAlign {
     Right,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq,Copy)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy)]
 pub struct DoorId(pub uid::IdU16<PhantomData<Door>>);
 
 impl DoorId {

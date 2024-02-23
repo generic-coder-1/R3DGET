@@ -7,15 +7,13 @@ pub type TextureId = Box<str>;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextureData {
     pub id: TextureId,
-    pub width: f32,
-    pub height: f32,
+    pub ratio: f32,
 }
 impl TextureData {
     pub fn new(tex: &Texture, id: TextureId) -> Self {
         Self {
             id,
-            width: tex.texture.width() as f32 / 100.,
-            height: tex.texture.height() as f32 / 100.,
+            ratio: tex.texture.width() as f32 / tex.texture.height() as f32,
         }
     }
 }

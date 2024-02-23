@@ -1,7 +1,8 @@
 use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::DoorId}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
-use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, ImageSource, RichText, ScrollArea, Ui};
+use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, ImageSource, RichText, ScrollArea, Ui, Vec2};
 use egui_modal::Modal;
 use instant::Instant;
+use itertools::Itertools;
 use std::{borrow::Cow, collections::HashMap, path::PathBuf};
 use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use egui_dnd::{self};
@@ -17,7 +18,7 @@ use winit::{
     window::{Fullscreen, Window, WindowBuilder},
 };
 
-use super::game_folder_structure::GameData;
+use super::{borrowed_toggle_switch::{self, toggle_ui}, game_folder_structure::GameData};
 
 pub struct ApplicationState{
     screen_state: ScreenState,
@@ -389,16 +390,43 @@ impl ApplicationState {
                         let add_texture_controls = |ui:&mut Ui,name:&str,texture:&mut MeshTex|{
                             ui.collapsing(name,|ui|{
                                 ui.menu_button(format!("Id: {}",texture.id.id), |ui|{
-                                    game_data.textures.iter().for_each(|(name,_,_)|{
-                                        if ui.add(Button::image_and_text(egui::Image::new(get_egui_image_sorce(&name)), name.as_ref())).clicked(){
-                                            texture.id.id = name.clone();
-                                        }
+                                    egui::Grid::new("texture selection grid").show(ui, |ui|{
+                                        game_data.textures.iter().chunks(3).into_iter().for_each(|chunks|{
+                                            chunks.for_each(|(name,_,_)|{
+                                                ui.vertical(|ui|{
+                                                    if ui.button(name.as_ref()).clicked(){
+                                                        texture.id = TextureData::new(self.render_state.textures.get(name).unwrap(), name.clone());
+                                                        ui.close_menu();
+                                                    }
+                                                    ui.allocate_ui(Vec2::new(100., 100.), |ui|{
+                                                        ui.add(egui::Image::new(get_egui_image_sorce(&name)).max_width(20.));
+                                                    });
+                                                });
+                                            });
+                                            ui.end_row();
+                                        });
                                     });
+                                    
                                 });
-                                ui.label(format!("Id: {}",texture.id.id));
                                 ui.collapsing("Offset", |ui|{
-                                    add_drag_value(ui, "X:", &mut texture.offset[0], 0.1);
-                                    add_drag_value(ui, "Y:", &mut texture.offset[1], 0.1);
+                                    add_drag_value(ui, "X:", &mut texture.offset[0], 0.05);
+                                    add_drag_value(ui, "Y:", &mut texture.offset[1], 0.05);
+                                });
+                                ui.collapsing("Fliped", |ui|{
+                                    borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[0]);
+                                    borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[1]);
+                                });
+                                ui.collapsing("Tile Mode", |ui|{
+                                    match &mut texture.tile {
+                                        crate::level::mesh::TileStyle::TileSpecific(x, y) => {
+                                            add_drag_value(ui, "X:", x, 0.1);
+                                            add_drag_value(ui, "Y:", y, 0.1);
+                                        },
+                                        crate::level::mesh::TileStyle::TileScale(scale, global) => {
+                                            add_drag_value(ui, "Scale:", scale, 0.1);
+                                            toggle_ui(ui, global);
+                                        },
+                                    }
                                 });
                                 ui.add(egui::Image::new(get_egui_image_sorce(&texture.id.id)).max_width(100.));
                             });

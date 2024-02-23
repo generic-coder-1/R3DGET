@@ -2,7 +2,7 @@ use crate::renderer::{
     texture::{TextureData, TextureId},
     vertex::Vertex,
 };
-use geo::{coord, Polygon, BoundingRect};
+use geo::{coord, BoundingRect, Polygon};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +49,7 @@ impl Mesh {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MeshTex{
+pub struct MeshTex {
     pub id: TextureData,
     pub offset: [f32; 2],
     pub tile: TileStyle,
@@ -74,35 +74,47 @@ impl MeshTex {
                     .collect_vec(),
             ),
             vec![],
-        ).bounding_rect().unwrap();
+        )
+        .bounding_rect()
+        .unwrap();
 
-        let helper_closure: Box<dyn Fn(&f32,&f32)->[f32;2]> = match self.tile {
-            TileStyle::TileSpecific(x_tiles, y_tiles) => Box::new(move |x,y|{
+        let helper_closure: Box<dyn Fn(&f32, &f32) -> [f32; 2]> = match self.tile {
+            TileStyle::TileSpecific(x_tiles, y_tiles) => Box::new(move |x, y| {
                 [
-                    (if !self.fliped[0] {bounds.width()*x_tiles - (x-bounds.min().x+self.offset[0])} else {x-bounds.min().x+self.offset[0]}/(bounds.width()*x_tiles)),
-                    (if !self.fliped[1] {bounds.height()*y_tiles - (y-bounds.min().y+self.offset[1])} else {y-bounds.min().y+self.offset[1]}/(bounds.height()*y_tiles)),
+                    (if !self.fliped[0] {
+                        bounds.width() * x_tiles - (x + bounds.min().x + self.offset[0])
+                    } else {
+                        x + bounds.min().x + self.offset[0]
+                    } / (bounds.width() * x_tiles)),
+                    (if !self.fliped[1] {
+                        bounds.height() * y_tiles - (y + bounds.min().y + self.offset[1])
+                    } else {
+                        y + bounds.min().y + self.offset[1]
+                    } / (bounds.height() * y_tiles)),
                 ]
             }),
-            TileStyle::TileScale(scale, global) => {
-                match global {
-                    true=> Box::new(move |x: &f32,y: &f32|{
-                        [
-                            (if !self.fliped[0]{-x}else{*x} + self.offset[0]) / (self.id.width * scale),
-                            (if !self.fliped[1]{-y}else{*y} + self.offset[1]) / (self.id.height * scale)
-                        ]
-                    }),
-                    false=>Box::new(move |x: &f32,y: &f32|{
-                        [
-                            (if !self.fliped[0]{-x}else{*x} + self.offset[0]) / (self.id.width * scale),
-                            (if !self.fliped[1]{-y}else{*y} + self.offset[1]) / (self.id.height * scale)
-                        ]
-                    })
-                }
+            TileStyle::TileScale(scale, global) => match global {
+                true => Box::new(move |x: &f32, y: &f32| {
+                    [
+                        (if !self.fliped[0] { -x } else { *x } + self.offset[0])
+                            / (scale * self.id.ratio),
+                        (if !self.fliped[1] { -y } else { *y } + self.offset[1]) / (scale),
+                    ]
+                }),
+                false => Box::new(move |x: &f32, y: &f32| {
+                    [
+                        (if !self.fliped[0] { -x } else { *x } + self.offset[0] + bounds.min().x)
+                            / (scale * self.id.ratio),
+                        (if !self.fliped[1] { -y } else { *y } + self.offset[1] + bounds.min().y)
+                            / (scale),
+                    ]
+                }),
             },
         };
-        points.iter().map(|point|{
-            helper_closure(&point.0,&point.1)
-        }).collect_vec()
+        points
+            .iter()
+            .map(|point| helper_closure(&point.0, &point.1))
+            .collect_vec()
     }
 }
 
