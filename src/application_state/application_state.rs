@@ -1,9 +1,9 @@
-use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::DoorId}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
+use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::{DoorId, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
 use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, ImageSource, RichText, ScrollArea, Ui, Vec2};
 use egui_modal::Modal;
 use instant::Instant;
 use itertools::Itertools;
-use std::{borrow::Cow, collections::HashMap, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, fmt::format, path::PathBuf};
 use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use egui_dnd::{self};
 use cgmath::{Point3, Rad};
@@ -413,14 +413,20 @@ impl ApplicationState {
                                     add_drag_value(ui, "Y:", &mut texture.offset[1], 0.05);
                                 });
                                 ui.collapsing("Fliped", |ui|{
-                                    borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[0]);
-                                    borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[1]);
+                                    ui.horizontal(|ui|{
+                                        ui.label("X:");
+                                        borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[0]);
+                                    });
+                                    ui.horizontal(|ui|{
+                                        ui.label("Y:");
+                                        borrowed_toggle_switch::toggle_ui(ui, &mut texture.fliped[1]);
+                                    });
                                 });
                                 ui.collapsing("Tile Mode", |ui|{
                                     ui.horizontal(|ui|{
-                                        ui.label("Specfifc Tile");
+                                        ui.label("Scale");
                                         toggle_ui(ui, &mut texture.tile.is_specific);
-                                        ui.label("Scale Tile");
+                                        ui.label("Specfifc");
                                     });
                                     match &mut texture.tile.is_specific {
                                         true=>{
@@ -431,7 +437,10 @@ impl ApplicationState {
                                         false=>{
                                             let crate::level::mesh::TileScale(scale,global)=&mut texture.tile.scale;
                                             add_drag_value(ui, "Scale:", scale, 0.1);
-                                            toggle_ui(ui, global);
+                                            ui.horizontal(|ui|{
+                                                ui.label("Global:");
+                                                toggle_ui(ui, global);
+                                            });
                                         },
                                     }
                                 });
@@ -445,14 +454,142 @@ impl ApplicationState {
                                         SelectedItem::Room { index } => {
                                             let room = level.rooms.get_mut(*index).unwrap();
                                             ui.add(egui::Label::new(format!("Name: {} ",room.name)).wrap(false));
-                                            add_drag_value(ui,"X:",&mut room.position.x,0.1);
-                                            add_drag_value(ui,"Y:",&mut room.position.y,0.1);
-                                            add_drag_value(ui,"Z:",&mut room.position.z,0.1);
-                                            add_drag_value(ui,"Rot:",&mut room.rotation.0,0.01);
-                                            add_texture_controls(ui, "Floor texture",&mut room.floor_texture);
+                                            ui.collapsing("Position", |ui|{                                                
+                                                add_drag_value(ui,"X:",&mut room.position.x,0.1);
+                                                add_drag_value(ui,"Y:",&mut room.position.y,0.1);
+                                                add_drag_value(ui,"Z:",&mut room.position.z,0.1);
+                                                add_drag_value(ui,"Rot:",&mut room.rotation.0,0.01);
+                                            });
+                                            ui.collapsing("Textures", |ui|{
+                                                add_texture_controls(ui, "Floor texture",&mut room.floor_texture);
+                                                add_texture_controls(ui, "Roof texture",&mut room.roof_texture);
+                                            });
+                                            ui.collapsing("Walls", |ui|{
+                                                let mut wall_to_remove=None;
+                                                let mut wall_to_add=None;
+                                                (0..room.walls.len()).into_iter().for_each(|i|{
+                                                    let wall = &mut room.walls[i];
+                                                    ui.collapsing(format!("Wall {i}"), |ui|{
+                                                        add_drag_value(ui, "X:", &mut wall.local_pos.x, 0.1);
+                                                        add_drag_value(ui, "Y:", &mut wall.local_pos.y, 0.1);
+                                                        add_texture_controls(ui,"Texture",&mut wall.wall_texture);
+                                                        ui.horizontal(|ui|{  
+                                                            if ui.button("−").clicked(){
+                                                                wall_to_remove = Some(i);
+                                                            };
+                                                            if ui.button("+").clicked(){
+                                                                wall_to_add = Some(i+1);
+                                                            };
+                                                        });
+                                                    });
+                                                });
+                                                if let Some(i) = wall_to_remove{
+                                                    room.walls.remove(i);
+                                                }
+                                                if let Some(i) = wall_to_add{
+                                                    room.walls.insert(i,Wall::new((room.walls[((i as isize -1)%(room.walls.len() as isize)) as usize].local_pos + room.walls[((i as isize)%(room.walls.len() as isize)) as usize].local_pos)/2., room.walls[((i as isize -1)%(room.walls.len() as isize)) as usize].wall_texture.clone()));
+                                                }
+                                            });
                                         },
-                                        SelectedItem::Modifer { room_index, modifer_index } => {},
-                                        SelectedItem::Door { room_index, door_id } => {},
+                                        SelectedItem::Modifer { room_index, modifer_index } => {
+                                            let modifer = &mut level.rooms[*room_index].moddifiers[*modifer_index];
+                                            match modifer{
+                                                crate::level::room::Modifier::Ramp { pos, dir, size, ramp_texture, wall_texture, bottom_texture } => {
+                                                    ui.collapsing("Position", |ui|{                                                        
+                                                        add_drag_value(ui, "X:", &mut pos.x, 0.1);
+                                                        add_drag_value(ui, "Y:", &mut pos.y, 0.1);
+                                                        add_drag_value(ui, "Z:", &mut pos.z, 0.1);
+                                                        add_drag_value(ui, "Rot:", &mut dir.0, 0.01);
+                                                    });
+                                                    ui.collapsing("Size", |ui|{
+                                                        add_drag_value(ui, "X:", &mut size.x, 0.1);
+                                                        add_drag_value(ui, "Y:", &mut size.y, 0.1);
+                                                        add_drag_value(ui, "Z:", &mut size.z, 0.1);
+                                                    });
+                                                    ui.collapsing("Textures", |ui|{
+                                                        add_texture_controls(ui,"Ramp Texture",ramp_texture);
+                                                        add_texture_controls(ui,"Wall Texture",wall_texture);
+                                                        add_texture_controls(ui,"Bottom Texture",bottom_texture);
+
+                                                    });                                                    
+                                                },
+                                                crate::level::room::Modifier::Cliff { walls, on_roof, height, floor_texture } => {
+                                                    toggle_ui(ui, on_roof);
+                                                    add_drag_value(ui, "Height:", height, 0.1);
+                                                    add_texture_controls(ui,"Floor Texture",floor_texture);
+                                                    ui.collapsing("Walls", |ui|{
+                                                        let mut wall_to_remove=None;
+                                                        let mut wall_to_add=None;
+                                                        (0..walls.len()).into_iter().for_each(|i|{
+                                                            let wall = &mut walls[i];
+                                                            ui.collapsing(format!("Wall {i}"), |ui|{
+                                                                add_drag_value(ui, "X:", &mut wall.local_pos.x, 0.1);
+                                                                add_drag_value(ui, "Y:", &mut wall.local_pos.y, 0.1);
+                                                                add_texture_controls(ui,"Texture",&mut wall.wall_texture);
+                                                                ui.horizontal(|ui|{  
+                                                                    if ui.button("−").clicked(){
+                                                                        wall_to_remove = Some(i);
+                                                                    };
+                                                                    if ui.button("+").clicked(){
+                                                                        wall_to_add = Some(i+1);
+                                                                    };
+                                                                });
+                                                            });
+                                                        });
+                                                        if let Some(i) = wall_to_remove{
+                                                            walls.remove(i);
+                                                        }
+                                                        if let Some(i) = wall_to_add{
+                                                            walls.insert(i,Wall::new((walls[((i as isize -1)%(walls.len() as isize)) as usize].local_pos + walls[((i as isize)%(walls.len() as isize)) as usize].local_pos)/2., walls[((i as isize -1)%(walls.len() as isize)) as usize].wall_texture.clone()));
+                                                        }
+                                                    });
+                                                },
+                                                crate::level::room::Modifier::Disc { pos, size, sides, dir, top_tex, bottom_tex } => {
+                                                    ui.collapsing("Position", |ui|{                                                        
+                                                        add_drag_value(ui, "X:", &mut pos.x, 0.1);
+                                                        add_drag_value(ui, "Y:", &mut pos.y, 0.1);
+                                                        add_drag_value(ui, "Z:", &mut pos.z, 0.1);
+                                                        add_drag_value(ui, "Rot:", &mut dir.0, 0.01);
+                                                    });
+                                                    ui.collapsing("Size", |ui|{
+                                                        add_drag_value(ui, "X:", &mut size.x, 0.1);
+                                                        add_drag_value(ui, "Y:", &mut size.y, 0.1);
+                                                        add_drag_value(ui, "Z:", &mut size.z, 0.1);
+                                                    });
+                                                    ui.collapsing("Texture", |ui|{
+                                                        add_texture_controls(ui,"Top Texture",top_tex);
+                                                        add_texture_controls(ui,"Bottom Texture",bottom_tex);
+                                                    });
+                                                    ui.collapsing("Sides", |ui|{
+                                                        let mut side_to_remove = None;
+                                                        let mut side_to_add = None;
+                                                        sides.iter_mut().enumerate().for_each(|(i,side_tex)|{
+                                                            ui.collapsing(format!("Side {}",i), |ui|{
+                                                                add_texture_controls(ui,"Texture",side_tex);
+                                                                ui.horizontal(|ui|{  
+                                                                    if ui.button("−").clicked(){
+                                                                        side_to_remove = Some(i);
+                                                                    };
+                                                                    if ui.button("+").clicked(){
+                                                                        side_to_add = Some(i+1);
+                                                                    };
+                                                                });
+                                                            });
+                                                        });
+                                                        if let Some(i) = side_to_remove{
+                                                            sides.remove(i);
+                                                        }
+                                                        if let Some(i) = side_to_add{
+                                                            sides.insert(i, sides[i-1].clone());
+                                                        }
+                                                    });
+                                                },
+                                            }
+                                        },
+                                        SelectedItem::Door { room_index, door_id } => {
+                                            let door = level.rooms[*room_index].doors.get_mut(&door_id).unwrap();
+
+                                        },
                                         SelectedItem::HallWay { hallway_index } => {},
                                     }
                                 }
