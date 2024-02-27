@@ -2,7 +2,7 @@ use std::{collections::HashMap, f32::consts::PI, marker::PhantomData, ops::Deref
 
 use cgmath::{
     num_traits::Signed, Array, Basis2, InnerSpace, Matrix2, MetricSpace, Rad, Rotation, Rotation2,
-    Vector2, Vector3,
+    Vector2, Vector3, VectorSpace,
 };
 use earcutr::{self, earcut};
 use geo::{coord, BooleanOps, CoordsIter, MultiPolygon, Polygon, Rect};
@@ -69,8 +69,19 @@ impl Room {
             .nth(door.wall)
             .expect("Wall doesn't exist");
         let (x, z) =
-            (Matrix2::from_angle(self.rotation) * ((start.local_pos + end.local_pos) / 2.)).into();
-        let y = 0.;
+            (Matrix2::from_angle(self.rotation) * ({
+                let dist = start.local_pos.distance(end.local_pos);
+                match door.center.1{
+                    HorizontalAlign::Center=>{(start.local_pos+end.local_pos)/2.}
+                    HorizontalAlign::Left => {start.local_pos.lerp(end.local_pos, door.size.x/(2.*dist))},
+                    HorizontalAlign::Right => {start.local_pos.lerp(end.local_pos, 1.-(door.size.x/2.)/(dist))},
+                }
+            })).into();
+        let y = match door.center.0 {
+            VerticalAlign::Top => self.height-door.size.y,
+            VerticalAlign::Center => (self.height-door.size.y)/2.,
+            VerticalAlign::Bottom => {0.},
+        };
 
         let position = Vector3::new(x, y, z) + self.position;
 
@@ -750,13 +761,12 @@ pub struct Door {
     pub wall: usize,
     pub offset: Vector2<f32>,
     pub size: Vector2<f32>,
-    pub vertical_alignment: VerticalAlign,
-    pub horizontal_alignment: HorizontalAlign,
+    pub center:(VerticalAlign,HorizontalAlign),
 }
 
 impl Door {
     pub fn to_rect(&self, width: f32, height: f32) -> Rect<f32> {
-        let (top, bottom) = match self.vertical_alignment {
+        let (top, bottom) = match self.center.0 {
             VerticalAlign::Top => (height + self.offset.y, height + self.offset.y - self.size.y),
             VerticalAlign::Center => (
                 height / 2. + self.offset.y + self.size.y / 2.,
@@ -764,7 +774,7 @@ impl Door {
             ),
             VerticalAlign::Bottom => (self.offset.y + self.size.y, self.offset.y),
         };
-        let (left, right) = match self.horizontal_alignment {
+        let (left, right) = match self.center.1 {
             HorizontalAlign::Left => (self.offset.x, self.offset.x + self.size.x),
             HorizontalAlign::Center => (
                 width / 2. + self.offset.x - self.size.x / 2.,
@@ -776,13 +786,13 @@ impl Door {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum VerticalAlign {
     Top,
     Center,
     Bottom,
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum HorizontalAlign {
     Left,
     Center,

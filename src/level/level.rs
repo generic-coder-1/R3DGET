@@ -95,15 +95,13 @@ impl LevelData {
             wall: 6,
             offset: Vector2::new(0., 0.),
             size: Vector2::new(1., 4.),
-            vertical_alignment: super::room::VerticalAlign::Bottom,
-            horizontal_alignment: super::room::HorizontalAlign::Center,
+            center:(super::room::VerticalAlign::Bottom,super::room::HorizontalAlign::Center),
         });
         let id2 = rooms[1].new_door(Door {
             wall: 0,
             offset: Vector2::new(0., 0.),
             size: Vector2::new(1., 2.),
-            vertical_alignment: super::room::VerticalAlign::Bottom,
-            horizontal_alignment: super::room::HorizontalAlign::Center,
+            center:(super::room::VerticalAlign::Bottom,super::room::HorizontalAlign::Center),
         });
         let mut hallway = HallWay::new(
             rooms[0].get_control_rect(&id1, true),

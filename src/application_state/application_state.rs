@@ -1,9 +1,9 @@
-use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::{DoorId, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
-use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, ImageSource, RichText, ScrollArea, Ui, Vec2};
+use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::{DoorId, HorizontalAlign, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
+use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, Grid, ImageSource, RichText, ScrollArea, Ui, Vec2};
 use egui_modal::Modal;
 use instant::Instant;
 use itertools::Itertools;
-use std::{borrow::Cow, collections::HashMap, fmt::format, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, path::PathBuf};
 use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use egui_dnd::{self};
 use cgmath::{Point3, Rad};
@@ -587,8 +587,42 @@ impl ApplicationState {
                                             }
                                         },
                                         SelectedItem::Door { room_index, door_id } => {
+                                            let num_walls = level.rooms[*room_index].walls.len();
                                             let door = level.rooms[*room_index].doors.get_mut(&door_id).unwrap();
-
+                                            ui.collapsing("Position", |ui|{
+                                                add_drag_value(ui, "Wall", &mut door.wall, 1.);                                            
+                                                Grid::new("center").num_columns(3).min_col_width(10.).min_row_height(10.).spacing(Vec2::new(1., 1.)).show(ui, |ui|{
+                                                    let mut selectable_value2 = |ui:&mut Ui,a|{
+                                                        let mut button = Button::new("").min_size([20.,20.].into());
+                                                        if door.center == a{
+                                                            button = button.selected(true);
+                                                        }
+                                                        if ui.add(button).clicked(){
+                                                            door.center = a;
+                                                        }
+                                                    };
+                                                    selectable_value2(ui,(VerticalAlign::Top,HorizontalAlign::Left));
+                                                    selectable_value2(ui,(VerticalAlign::Top,HorizontalAlign::Center));
+                                                    selectable_value2(ui,(VerticalAlign::Top,HorizontalAlign::Right));
+                                                    ui.end_row();
+                                                    selectable_value2(ui,(VerticalAlign::Center,HorizontalAlign::Left));
+                                                    selectable_value2(ui,(VerticalAlign::Center,HorizontalAlign::Center));
+                                                    selectable_value2(ui,(VerticalAlign::Center,HorizontalAlign::Right));
+                                                    ui.end_row();
+                                                    selectable_value2(ui,(VerticalAlign::Bottom,HorizontalAlign::Left));
+                                                    selectable_value2(ui,(VerticalAlign::Bottom,HorizontalAlign::Center));
+                                                    selectable_value2(ui,(VerticalAlign::Bottom,HorizontalAlign::Right));
+                                                    ui.end_row();
+                                                });
+                                                add_drag_value(ui, "X:", &mut door.offset.x, 0.01);
+                                                add_drag_value(ui, "Y:", &mut door.offset.y, 0.01);
+                                            });
+                                            ui.collapsing("Size", |ui|{
+                                                add_drag_value(ui, "X:", &mut door.size.x, 0.01);
+                                                add_drag_value(ui, "Y:", &mut door.size.y, 0.01);
+                                            });
+                                            door.wall = door.wall%num_walls;
+                                            
                                         },
                                         SelectedItem::HallWay { hallway_index } => {},
                                     }
