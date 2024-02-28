@@ -103,17 +103,17 @@
                 ),
             ),
             start_location: Some((
-                room_index: 0,
-                door_id: 3,
+                room_index: 7,
+                door_id: 5,
             )),
             end_location: Some((
-                room_index: 1,
-                door_id: 4,
+                room_index: 8,
+                door_id: 6,
             )),
         ),
     ],
-    rooms: [
-        (
+    rooms: {
+        7: (
             position: (
                 x: 0.0,
                 y: 0.0,
@@ -275,7 +275,7 @@
                 ),
             ],
             doors: {
-                3: (
+                5: (
                     wall: 6,
                     offset: (
                         x: 0.0,
@@ -654,7 +654,7 @@
             ),
             name: "default_room_1",
         ),
-        (
+        8: (
             position: (
                 x: 0.0,
                 y: 0.0,
@@ -740,7 +740,7 @@
                 ),
             ],
             doors: {
-                4: (
+                6: (
                     wall: 0,
                     offset: (
                         x: 0.0,
@@ -783,5 +783,5 @@
             ),
             name: "default_room_2",
         ),
-    ],
+    },
 )

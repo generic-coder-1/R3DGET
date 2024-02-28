@@ -2,7 +2,7 @@ use crate::{
     camer_control::CameraController,
     renderer::{camera::Camera, texture::TextureData},
 };
-use std::f32::consts::PI;
+use std::{collections::HashMap, f32::consts::PI};
 use cgmath::{Point3, Rad, Vector2, Vector3};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -10,14 +10,14 @@ use serde::{Deserialize, Serialize};
 use super::{
     hallway::{DoorLocation, HallWay, HallWayTexData},
     mesh::{Mesh, MeshTex, Meshable},
-    room::{Door, Room, Wall},
+    room::{Door, Room, RoomId, Wall},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LevelData {
     pub start_camera: CameraController,
     pub hallways: Vec<HallWay>,
-    pub rooms: Vec<Room>,
+    pub rooms: HashMap<RoomId,Room>,
 }
 
 impl LevelData {
@@ -29,7 +29,7 @@ impl LevelData {
                 Camera::new([0., 0., 0.], Rad(0.), Rad(0.)),
             ),
             hallways: vec![],
-            rooms: vec![],
+            rooms: HashMap::new(),
         }
     }
     pub fn new(default_tex_id: &TextureData) -> Self {
@@ -108,14 +108,6 @@ impl LevelData {
             rooms[1].get_control_rect(&id2, false),
             HallWayTexData::all(defualt_mesh_tex.clone()),
         );
-        hallway.start_location = Some(DoorLocation {
-            room_index: 0,
-            door_id: id1,
-        });
-        hallway.end_location = Some(DoorLocation {
-            room_index: 1,
-            door_id: id2,
-        });
         rooms[0].moddifiers.push(super::room::Modifier::Ramp {
             pos: Vector3::new(0., 2., 0.),
             dir: Rad(0.2),
@@ -178,6 +170,21 @@ impl LevelData {
             top_tex: defualt_mesh_tex.clone(),
             bottom_tex: defualt_mesh_tex.clone(),
         });
+        let room1_id=RoomId::new();
+        let room2_id=RoomId::new();
+        hallway.start_location = Some(DoorLocation {
+            room_index: room1_id,
+            door_id: id1,
+        });
+        hallway.end_location = Some(DoorLocation {
+            room_index: room2_id,
+            door_id: id2,
+        });
+        let room1 = rooms.remove(0);
+        let room2 = rooms.remove(0);
+        let mut actual_rooms = HashMap::new();
+        actual_rooms.insert(room1_id, room1);
+        actual_rooms.insert(room2_id, room2);
         Self {
             start_camera: CameraController::new(
                 4.0,
@@ -185,7 +192,7 @@ impl LevelData {
                 Camera::new(Point3::new(0.0, 2.0, 0.0), Rad(0.0), Rad(0.0)),
             ),
             hallways: vec![hallway],
-            rooms,
+            rooms:actual_rooms,
         }
     }
 }
@@ -194,7 +201,7 @@ impl LevelData {
 pub struct LevelState {
     pub camera_controler: CameraController,
     pub hallways: Vec<HallWay>,
-    pub rooms: Vec<Room>,
+    pub rooms: HashMap<RoomId,Room>,
 }
 
 impl LevelState {
@@ -214,7 +221,7 @@ impl Meshable for LevelState {
     fn mesh(&self) -> Vec<Mesh> {
         let mut meshes = vec![];
         let mut rooms = self.rooms.iter().fold(vec![], |mut acc, room| {
-            acc.append(&mut room.mesh());
+            acc.append(&mut room.1.mesh());
             acc
         });
         //self.hallways.iter_mut().for_each(|hallway|{hallway.update_door_location(&self.rooms)});

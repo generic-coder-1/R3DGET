@@ -164,7 +164,7 @@ impl TileStyle{
     pub fn tile_specific(a: f32,b: f32)->Self{
         Self{
             specific: TileSpecific(a, b),
-            scale: TileScale(0.1, true),
+            scale: TileScale(1., true),
             is_specific:true,
         }
     }

@@ -1,12 +1,13 @@
-use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable}, room::{DoorId, HorizontalAlign, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
-use egui::{emath, vec2, Button, CollapsingHeader, Color32, Context, DragValue, FontFamily, FontId, Grid, ImageSource, RichText, ScrollArea, Ui, Vec2};
+use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable, TileStyle}, room::{Door, DoorId, HorizontalAlign, Modifier, Room, RoomId, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
+use egui::{emath, vec2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontFamily, FontId, Grid, ImageSource, Order, RichText, ScrollArea, Ui, Vec2};
 use egui_modal::Modal;
 use instant::Instant;
 use itertools::Itertools;
-use std::{borrow::Cow, collections::HashMap, path::PathBuf};
+use std::{borrow::Cow, cmp::Ordering, collections::HashMap, path::PathBuf};
+use std::hash::Hash;
 use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use egui_dnd::{self};
-use cgmath::{Point3, Rad};
+use cgmath::{Point3, Rad, Vector2, Vector3};
 use egui::FontDefinitions;
 use stolen_code_to_update_dependencies::{Platform, PlatformDescriptor};
 use renderer::renderstate::State;
@@ -17,7 +18,7 @@ use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, Window, WindowBuilder},
 };
-
+use crate::ModuloSignedExt;
 use super::{borrowed_toggle_switch::{self, toggle_ui}, game_folder_structure::GameData};
 
 pub struct ApplicationState{
@@ -56,6 +57,7 @@ enum EditorState{
     LevelEditing{
         selected_level:String,
         selected_item:Option<SelectedItem>,
+        new_moddifer:Modifier
     },
 }
 
@@ -63,14 +65,14 @@ enum EditorState{
 #[derive(Clone)]
 enum SelectedItem{
     Room{
-        index:usize,
+        index:RoomId,
     },
     Modifer{
-        room_index:usize,
+        room_index:RoomId,
         modifer_index:usize,
     },
     Door{
-        room_index:usize,
+        room_index:RoomId,
         door_id:DoorId,
     },
     HallWay{
@@ -293,10 +295,11 @@ impl ApplicationState {
                                 });
                             });
                         });
-                    },  
+                    },
                     EditorState::LevelEditing{
                         selected_level,
                         selected_item,
+                        new_moddifer
                     }=>{
                         let level = &mut self.level_state;
                         egui::TopBottomPanel::top("tool bar").show_animated(ctx, self.interacting_with_ui, |ui|{
@@ -311,47 +314,107 @@ impl ApplicationState {
                                 }
                             });
                         });
+                        fn add_or_delete<T,U>(ui:&mut Ui, iter:&mut HashMap<U,T>, mut callback:impl FnMut(&mut Ui,&U,&mut T), default:T,order:impl FnMut(&(&U,&mut T),&(&U,&mut T))->Ordering)where U:Default + Hash + Eq + Clone{
+                            let mut to_add = false;
+                            let mut to_delete: Option<U> = None;
+                            iter.iter_mut().sorted_by(order).for_each(|(i,value)|{
+                                ui.horizontal_top(|ui|{                                    
+                                    callback(ui,i,value);
+                                    if ui.button("−").clicked(){
+                                        to_delete = Some(i.clone());
+                                    }
+                                });
+                            });
+                            if ui.button("+").clicked(){                                        
+                                to_add = true;
+                            }
+                            if let Some(i) = to_delete{
+                                iter.remove(&i);
+                            }
+                            if to_add{
+                                iter.insert(U::default(), default);
+                            }
+                        }
+                        fn add_or_delete2<T>(ui:&mut Ui, iter:&mut Vec<T>, mut callback:impl FnMut(&mut Ui,usize,&T), default:&T)where T:Clone{
+                            let mut to_add: bool = false;
+                            let mut to_delete: Option<usize> = None;
+                            iter.iter().enumerate().for_each(|(i,value)|{
+                                ui.horizontal(|ui|{                                 
+                                    callback(ui,i,value);
+                                    if ui.button("−").clicked(){
+                                        to_delete = Some(i);
+                                    }
+                                });
+                            });
+                            if ui.button("+").clicked(){
+                                to_add = true;
+                            }
+                            if let Some(i) = to_delete{
+                                iter.remove(i);
+                            }
+                            if to_add{
+                                iter.push(default.clone());
+                            }
+                        }
                         egui::SidePanel::left("selector").show_animated(ctx,self.interacting_with_ui, |ui|{
                             egui::ScrollArea::new([false,true]).show(ui, |ui|{
                                 CollapsingHeader::new(RichText::new("Rooms").heading()).default_open(true).show(ui, |ui|{
-                                    level.rooms.iter().enumerate().for_each(|(i,room)|{
+                                    let default_tex = MeshTex::new(TextureData::new(&self.render_state.default_texture, "default".into()),TileStyle::tile_scale(1., true));
+                                    let room_callback = |ui:&mut Ui,i: &RoomId,room: &mut Room|{
                                         ui.collapsing(format!("Room: {}",&room.name), |ui|{
                                             if ui.label("Room").clicked(){
+                                                let i2 = i.clone();
                                                 self.screen_state_callbacks.push(Box::new(move |screen_state|{
                                                     if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
-                                                        *selected_item = Some(SelectedItem::Room { index: i });
+                                                        *selected_item = Some(SelectedItem::Room { index: i2 });
                                                     };
                                                 }));
                                             }
                                             ui.collapsing("Modifers", |ui|{
-                                                room.moddifiers.iter().enumerate().for_each(|(j,moddifier)|{
+                                                ComboBox::from_label("New Moddifer")
+                                                    .selected_text(match &new_moddifer{
+                                                        crate::level::room::Modifier::Ramp { .. } => "Ramp",
+                                                        crate::level::room::Modifier::Cliff { .. } => "Extend",
+                                                        crate::level::room::Modifier::Disc { .. } => "Platform",
+                                                    })
+                                                    .show_ui(ui, |ui|{
+                                                    ui.selectable_value(new_moddifer, Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Rad(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() }, "Platform");
+                                                    ui.selectable_value(new_moddifer, Modifier::Ramp { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), ramp_texture: default_tex.clone(),dir:Rad(0.), wall_texture: default_tex.clone(), bottom_texture: default_tex.clone() },"Ramp");
+                                                    ui.selectable_value(new_moddifer, Modifier::Cliff {walls: vec![Wall {local_pos: Vector2::new(-1., -1.),wall_texture: default_tex.clone(),},Wall {local_pos: Vector2::new(1., -1.),wall_texture: default_tex.clone(),},Wall {local_pos: Vector2::new(1., 1.),wall_texture: default_tex.clone(),},Wall {local_pos: Vector2::new(-1., 1.),wall_texture: default_tex.clone(),},],on_roof: false,height: 1.,floor_texture: default_tex.clone(),}, "Extend");
+                                                });
+                                                let moddifer_callback = |ui: &mut Ui,j,moddifier:&Modifier|{
                                                     if ui.label(match &moddifier{
                                                         crate::level::room::Modifier::Ramp { .. } => "Ramp",
                                                         crate::level::room::Modifier::Cliff { .. } => "Extend",
                                                         crate::level::room::Modifier::Disc { .. } => "Platform",
                                                     }).clicked(){
+                                                        let i2 = i.clone();
                                                         self.screen_state_callbacks.push(Box::new(move |screen_state|{
                                                             if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
-                                                                *selected_item = Some(SelectedItem::Modifer { room_index: i,modifer_index:j });
+                                                                *selected_item = Some(SelectedItem::Modifer { room_index: i2,modifer_index:j });
                                                             }
                                                         }));
                                                     };
-                                                })
+                                                };
+                                                add_or_delete2(ui, &mut room.moddifiers, moddifer_callback,& new_moddifer);
                                             });
                                             ui.collapsing("Doors", |ui|{
-                                                room.doors.keys().for_each(|id|{
+                                                let door_callback = |ui:&mut Ui,id:&DoorId,_door:&mut Door|{
                                                     if ui.label(format!("Id:{}",id.0.get())).clicked(){
                                                         let a =id.clone();
+                                                        let i2 = i.clone();
                                                         self.screen_state_callbacks.push(Box::new(move |screen_state|{
                                                             if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
-                                                                *selected_item = Some(SelectedItem::Door { room_index: i, door_id: a });
+                                                                *selected_item = Some(SelectedItem::Door { room_index: i2, door_id: a });
                                                             }
                                                         }));
                                                     };
-                                                })
+                                                };
+                                                add_or_delete(ui, &mut room.doors, door_callback, Door { wall: 0, offset: Vector2::new(0., 0.), size: Vector2::new(1., 3.), center: (VerticalAlign::Bottom,HorizontalAlign::Center) },|a,b|{a.0.cmp(b.0)});
                                             });
                                         });
-                                    });
+                                    };
+                                    add_or_delete(ui, &mut level.rooms, room_callback, Room::new("New Room".into(), Vector3::new(0., 0., 0.), Rad(0.), 5., default_tex.clone(), default_tex.clone(), default_tex.clone()),|a,b|{a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase())});
                                 });
                                 CollapsingHeader::new(RichText::new("Hallways").heading()).default_open(true).show(ui,|ui|{
                                     level.hallways.iter().enumerate().for_each(|(i,hallway)|{
@@ -359,13 +422,13 @@ impl ApplicationState {
                                             i+1, 
                                             match &hallway.start_location{
                                                 Some(location)=>{
-                                                    format!("\n    Room: {}\n    Door:{:?}",level.rooms[location.room_index].name,location.door_id.0.get())
+                                                    format!("\n    Room: {}\n    Door:{:?}",level.rooms[&location.room_index].name,location.door_id.0.get())
                                                 },
                                                 None=>{"None".into()}
                                             }, 
                                             match &hallway.end_location{
                                                 Some(location)=>{
-                                                    format!("\n    Room: {}\n     Door:{:?}",level.rooms[location.room_index].name,location.door_id.0.get())
+                                                    format!("\n    Room: {}\n     Door:{:?}",level.rooms[&location.room_index].name,location.door_id.0.get())
                                                 },
                                                 None=>{"None".into()}
                                             }, 
@@ -452,8 +515,11 @@ impl ApplicationState {
                                 if let Some(selected_item) = selected_item{
                                     match selected_item{
                                         SelectedItem::Room { index } => {
-                                            let room = level.rooms.get_mut(*index).unwrap();
-                                            ui.add(egui::Label::new(format!("Name: {} ",room.name)).wrap(false));
+                                            let room = level.rooms.get_mut(&index).unwrap();
+                                            ui.horizontal(|ui|{
+                                                ui.add(egui::Label::new("Name:").wrap(false));
+                                                ui.text_edit_singleline(&mut room.name);
+                                            });
                                             ui.collapsing("Position", |ui|{                                                
                                                 add_drag_value(ui,"X:",&mut room.position.x,0.1);
                                                 add_drag_value(ui,"Y:",&mut room.position.y,0.1);
@@ -492,7 +558,7 @@ impl ApplicationState {
                                             });
                                         },
                                         SelectedItem::Modifer { room_index, modifer_index } => {
-                                            let modifer = &mut level.rooms[*room_index].moddifiers[*modifer_index];
+                                            let modifer = &mut level.rooms.get_mut(&room_index).unwrap().moddifiers[*modifer_index];
                                             match modifer{
                                                 crate::level::room::Modifier::Ramp { pos, dir, size, ramp_texture, wall_texture, bottom_texture } => {
                                                     ui.collapsing("Position", |ui|{                                                        
@@ -587,10 +653,10 @@ impl ApplicationState {
                                             }
                                         },
                                         SelectedItem::Door { room_index, door_id } => {
-                                            let num_walls = level.rooms[*room_index].walls.len();
-                                            let door = level.rooms[*room_index].doors.get_mut(&door_id).unwrap();
+                                            let num_walls = level.rooms[&room_index].walls.len();
+                                            let door = level.rooms.get_mut(&room_index).unwrap().doors.get_mut(&door_id).unwrap();
                                             ui.collapsing("Position", |ui|{
-                                                add_drag_value(ui, "Wall", &mut door.wall, 1.);                                            
+                                                add_drag_value(ui, "Wall", &mut door.wall, 0.1);                                            
                                                 Grid::new("center").num_columns(3).min_col_width(10.).min_row_height(10.).spacing(Vec2::new(1., 1.)).show(ui, |ui|{
                                                     let mut selectable_value2 = |ui:&mut Ui,a|{
                                                         let mut button = Button::new("").min_size([20.,20.].into());
@@ -621,10 +687,12 @@ impl ApplicationState {
                                                 add_drag_value(ui, "X:", &mut door.size.x, 0.01);
                                                 add_drag_value(ui, "Y:", &mut door.size.y, 0.01);
                                             });
-                                            door.wall = door.wall%num_walls;
+                                            door.wall = door.wall.modulo(num_walls as isize);
                                             
                                         },
-                                        SelectedItem::HallWay { hallway_index } => {},
+                                        SelectedItem::HallWay { hallway_index } => {
+
+                                        },
                                     }
                                 }
                             });
@@ -653,7 +721,8 @@ impl ApplicationState {
         {
             if let ApplicationState{screen_state:ScreenState::Editor { editor_state,game_data,..},..} = self{
                 if let EditorState::LevelSelection { selected_level:Some(selected_level),.. } = editor_state.clone() {
-                    *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone(),selected_item:None };
+                    let default_tex = MeshTex::new(self.default_tex.clone(), TileStyle::tile_scale(1., true));
+                    *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone(),selected_item:None,new_moddifer:Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Rad(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() } };
                     self.level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
                 }
             }

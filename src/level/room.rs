@@ -10,10 +10,55 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use uid::IdU16;
 
+use crate::ModuloSignedExt;
+
 use super::{
     hallway::ControlRect,
     mesh::{Mesh, MeshTex, MeshVertex, Meshable},
 };
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy)]
+pub struct RoomId(pub uid::IdU16<PhantomData<Room>>);
+
+impl RoomId {
+    pub fn new() -> Self {
+        Self(IdU16::<PhantomData<Room>>::new())
+    }
+}
+
+impl Default for RoomId{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Serialize for RoomId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.get().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for RoomId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Self(
+            //we get these values from the saved files so they should be safe(hopefully)
+            unsafe { IdU16::<PhantomData<Room>>::new_unchecked(u16::deserialize(deserializer)?) },
+        ))
+    }
+}
+
+impl Deref for RoomId {
+    type Target = IdU16<PhantomData<Room>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Room {
@@ -66,7 +111,7 @@ impl Room {
             .walls
             .iter()
             .circular_tuple_windows::<(&Wall, &Wall)>()
-            .nth(door.wall)
+            .nth((door.wall.modulo(self.walls.len() as isize)) as usize)
             .expect("Wall doesn't exist");
         let (x, z) =
             (Matrix2::from_angle(self.rotation) * ({
@@ -214,7 +259,7 @@ impl Meshable for Room {
                 .map(|_| vec![])
                 .collect_vec(),
             |mut acc, door| {
-                acc[door.wall].push(door);
+                acc[door.wall.modulo(self.walls.len() as isize) as usize].push(door);
                 acc
             },
         );
@@ -340,6 +385,17 @@ pub enum Modifier {
         top_tex: MeshTex,
         bottom_tex: MeshTex,
     },
+}
+
+impl PartialEq for Modifier{
+    fn eq(&self, other: &Self) -> bool {
+        match (self,other){
+            (Modifier::Ramp {..}, Modifier::Ramp {..}) => true,
+            (Modifier::Cliff {..}, Modifier::Cliff {..}) => true,
+            (Modifier::Disc {..}, Modifier::Disc {..}) => true,
+            _=>false
+        }
+    }
 }
 
 impl Modifier {
@@ -758,7 +814,7 @@ impl Modifier {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Door {
-    pub wall: usize,
+    pub wall: isize,
     pub offset: Vector2<f32>,
     pub size: Vector2<f32>,
     pub center:(VerticalAlign,HorizontalAlign),
@@ -805,6 +861,12 @@ pub struct DoorId(pub uid::IdU16<PhantomData<Door>>);
 impl DoorId {
     pub fn new() -> Self {
         Self(IdU16::<PhantomData<Door>>::new())
+    }
+}
+
+impl Default for DoorId{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

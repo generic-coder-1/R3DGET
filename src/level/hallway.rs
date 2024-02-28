@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::level::mesh::MeshTex;
 
 use cgmath::{Array, Basis2, MetricSpace, Rad, Rotation, Rotation2, Vector2, Vector3};
@@ -6,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     mesh::{Mesh, MeshVertex, Meshable},
-    room::{DoorId, Room},
+    room::{DoorId, Room, RoomId},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,12 +32,12 @@ impl HallWay {
             end_location: None,
         }
     }
-    pub fn update_door_location(&mut self, rooms: &Vec<Room>) {
+    pub fn update_door_location(&mut self, rooms: &HashMap<RoomId,Room>) {
         if let Some(location) = &self.start_location {
-            self.start = rooms[location.room_index].get_control_rect(&location.door_id, true);
+            self.start = rooms[&location.room_index].get_control_rect(&location.door_id, true);
         }
         if let Some(location) = &self.end_location {
-            self.end = rooms[location.room_index].get_control_rect(&location.door_id, false);
+            self.end = rooms[&location.room_index].get_control_rect(&location.door_id, false);
         }
     }
 }
@@ -82,7 +84,7 @@ impl HallWayTexData {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DoorLocation {
-    pub room_index: usize,
+    pub room_index: RoomId,
     pub door_id: DoorId,
 }
 
