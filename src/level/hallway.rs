@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::level::mesh::MeshTex;
 
-use cgmath::{Array, Basis2, MetricSpace, Rad, Rotation, Rotation2, Vector2, Vector3};
+use cgmath::{Array, Basis2, MetricSpace, Deg, Rotation, Rotation2, Vector2, Vector3};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -17,8 +17,8 @@ pub struct HallWay {
     pub start_texture: HallWayTexData,
     pub middle: Vec<(ControlRect, HallWayTexData)>,
     pub end: ControlRect,
-    pub start_location: Option<DoorLocation>,
-    pub end_location: Option<DoorLocation>,
+    pub start_location: DoorLocation,
+    pub end_location: DoorLocation,
 }
 
 impl HallWay {
@@ -28,16 +28,40 @@ impl HallWay {
             start_texture: texture,
             middle: vec![],
             end,
-            start_location: None,
-            end_location: None,
+            start_location: DoorLocation {
+                room_index: None,
+                door_id: None,
+                enabled: false,
+            },
+            end_location: DoorLocation {
+                room_index: None,
+                door_id: None,
+                enabled: false,
+            },
         }
     }
-    pub fn update_door_location(&mut self, rooms: &HashMap<RoomId,Room>) {
-        if let Some(location) = &self.start_location {
-            self.start = rooms[&location.room_index].get_control_rect(&location.door_id, true);
+    pub fn update_door_location(&mut self, rooms: &HashMap<RoomId, Room>) {
+        if self.start_location.enabled {
+            if let Some(room_index) = self.start_location.room_index {
+                if let Some(door_id) = self.start_location.door_id {
+                    if let Some(room) = rooms.get(&room_index){                        
+                        if let Some(c_rect) = room.get_control_rect(&door_id, false) {
+                            self.start = c_rect;
+                        }
+                    }
+                }
+            }
         }
-        if let Some(location) = &self.end_location {
-            self.end = rooms[&location.room_index].get_control_rect(&location.door_id, false);
+        if self.end_location.enabled {
+            if let Some(room_index) = self.end_location.room_index {
+                if let Some(door_id) = self.end_location.door_id {
+                    if let Some(room) = rooms.get(&room_index){                        
+                        if let Some(c_rect) = room.get_control_rect(&door_id, true) {
+                            self.end = c_rect;
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -84,19 +108,20 @@ impl HallWayTexData {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DoorLocation {
-    pub room_index: RoomId,
-    pub door_id: DoorId,
+    pub room_index: Option<RoomId>,
+    pub door_id: Option<DoorId>,
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControlRect {
     pub position: Vector3<f32>,
-    pub rotation: Rad<f32>,
+    pub rotation: Deg<f32>,
     pub size: Vector2<f32>,
 }
 
 impl ControlRect {
-    pub fn new(position: Vector3<f32>, rotation: Rad<f32>, size: Vector2<f32>) -> Self {
+    pub fn new(position: Vector3<f32>, rotation: Deg<f32>, size: Vector2<f32>) -> Self {
         Self {
             position,
             rotation,
@@ -107,7 +132,7 @@ impl ControlRect {
         let mut meshs = vec![];
         let floor_points = vec![
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / 2.))
                     .extend(0.);
                 p.swap_elements(1, 2);
@@ -115,7 +140,7 @@ impl ControlRect {
                 p
             },
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / -2.))
                     .extend(0.);
                 p.swap_elements(1, 2);
@@ -159,7 +184,7 @@ impl ControlRect {
         };
         let roof_points = vec![
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / 2.))
                     .extend(self.size.y);
                 p.swap_elements(1, 2);
@@ -167,7 +192,7 @@ impl ControlRect {
                 p
             },
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / -2.))
                     .extend(self.size.y);
                 p.swap_elements(1, 2);
@@ -198,7 +223,7 @@ impl ControlRect {
                 .collect_vec(),
         );
         let roof_mesh = Mesh {
-            textrure: tex.bottom.id.id.clone(),
+            textrure: tex.top.id.id.clone(),
             vertices: roof_points
                 .iter()
                 .enumerate()
@@ -209,7 +234,7 @@ impl ControlRect {
                 .collect_vec(),
             indices: vec![0, 1, 2, 3, 0, 2],
         };
-        let left_distance = ((Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+        let left_distance = ((Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
             * (self.size.x / -2.))
             + self.position.xz())
         .distance(
@@ -225,7 +250,7 @@ impl ControlRect {
         ];
         let left_points = vec![
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / -2.))
                     .extend(0.);
                 p.swap_elements(1, 2);
@@ -233,7 +258,7 @@ impl ControlRect {
                 p
             },
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / -2.))
                     .extend(self.size.y);
                 p.swap_elements(1, 2);
@@ -275,7 +300,7 @@ impl ControlRect {
                 .collect_vec(),
             indices: [0, 2, 1, 0, 3, 2].to_vec(),
         };
-        let right_distance = ((Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+        let right_distance = ((Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
             * (self.size.x / 2.))
             + self.position.xz())
         .distance(
@@ -291,7 +316,7 @@ impl ControlRect {
         ];
         let right_points = vec![
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / 2.))
                     .extend(0.);
                 p.swap_elements(1, 2);
@@ -299,7 +324,7 @@ impl ControlRect {
                 p
             },
             {
-                let mut p = (Basis2::from_angle(self.rotation).rotate_vector(Vector2::unit_x())
+                let mut p = (Basis2::from_angle(Deg(180.)-self.rotation).rotate_vector(Vector2::unit_x())
                     * (self.size.x / 2.))
                     .extend(self.size.y);
                 p.swap_elements(1, 2);

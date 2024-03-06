@@ -25,11 +25,11 @@
         (
             start: (
                 position: (
-                    x: -0.5990005,
+                    x: -0.01047197,
                     y: 0.0,
-                    z: 5.970025,
+                    z: 5.9999905,
                 ),
-                rotation: (-3.0415926),
+                rotation: (180.0),
                 size: (
                     x: 1.0,
                     y: 4.0,
@@ -96,20 +96,22 @@
                     y: 0.0,
                     z: 19.0,
                 ),
-                rotation: (0.0),
+                rotation: (180.0),
                 size: (
                     x: 1.0,
                     y: 2.0,
                 ),
             ),
-            start_location: Some((
-                room_index: 7,
-                door_id: 5,
-            )),
-            end_location: Some((
-                room_index: 8,
-                door_id: 6,
-            )),
+            start_location: (
+                room_index: Some(7),
+                door_id: Some(5),
+                enabled: true,
+            ),
+            end_location: (
+                room_index: Some(8),
+                door_id: Some(6),
+                enabled: true,
+            ),
         ),
     ],
     rooms: {

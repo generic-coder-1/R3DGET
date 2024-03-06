@@ -1,5 +1,5 @@
-use crate::{camer_control, level::{level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable, TileStyle}, room::{Door, DoorId, HorizontalAlign, Modifier, Room, RoomId, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
-use egui::{emath, vec2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontFamily, FontId, Grid, ImageSource, Order, RichText, ScrollArea, Ui, Vec2};
+use crate::{camer_control, level::{hallway::{ControlRect, HallWay, HallWayTexData}, level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable, TileStyle}, room::{Door, DoorId, HorizontalAlign, Modifier, Room, RoomId, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
+use egui::{emath, vec2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontFamily, FontId, Grid, ImageSource, RichText, ScrollArea, Ui, Vec2, WidgetText};
 use egui_modal::Modal;
 use instant::Instant;
 use itertools::Itertools;
@@ -7,7 +7,7 @@ use std::{borrow::Cow, cmp::Ordering, collections::HashMap, path::PathBuf};
 use std::hash::Hash;
 use winit::{event::{DeviceEvent, ElementState, KeyEvent, MouseButton, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use egui_dnd::{self};
-use cgmath::{Point3, Rad, Vector2, Vector3};
+use cgmath::{Deg, InnerSpace, Point3, Vector2, Vector3};
 use egui::FontDefinitions;
 use stolen_code_to_update_dependencies::{Platform, PlatformDescriptor};
 use renderer::renderstate::State;
@@ -85,7 +85,6 @@ impl ApplicationState {
         let window = WindowBuilder::new().build(&event_loop).unwrap();
         window.set_title("REDG3T");
         window.set_theme(Some(winit::window::Theme::Dark));
-    
         #[cfg(target_arch = "wasm32")]
         {
             use winit::dpi::PhysicalSize;
@@ -110,7 +109,7 @@ impl ApplicationState {
         level.start_camera = camer_control::CameraController::new(
             4.0,
             0.4,
-            Camera::new(Point3::new(0.0, 0.0, -10.0), Rad(0.0), Rad(0.0)),
+            Camera::new(Point3::new(0.0, 0.0, -10.0), Deg(0.0), Deg(0.0)),
         );
         let level_state = LevelState::from_level_data(&level);
     
@@ -378,8 +377,8 @@ impl ApplicationState {
                                                         crate::level::room::Modifier::Disc { .. } => "Platform",
                                                     })
                                                     .show_ui(ui, |ui|{
-                                                    ui.selectable_value(new_moddifer, Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Rad(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() }, "Platform");
-                                                    ui.selectable_value(new_moddifer, Modifier::Ramp { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), ramp_texture: default_tex.clone(),dir:Rad(0.), wall_texture: default_tex.clone(), bottom_texture: default_tex.clone() },"Ramp");
+                                                    ui.selectable_value(new_moddifer, Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Deg(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() }, "Platform");
+                                                    ui.selectable_value(new_moddifer, Modifier::Ramp { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), ramp_texture: default_tex.clone(),dir:Deg(0.), wall_texture: default_tex.clone(), bottom_texture: default_tex.clone() },"Ramp");
                                                     ui.selectable_value(new_moddifer, Modifier::Cliff {walls: vec![Wall {local_pos: Vector2::new(-1., -1.),wall_texture: default_tex.clone(),},Wall {local_pos: Vector2::new(1., -1.),wall_texture: default_tex.clone(),},Wall {local_pos: Vector2::new(1., 1.),wall_texture: default_tex.clone(),},Wall {local_pos: Vector2::new(-1., 1.),wall_texture: default_tex.clone(),},],on_roof: false,height: 1.,floor_texture: default_tex.clone(),}, "Extend");
                                                 });
                                                 let moddifer_callback = |ui: &mut Ui,j,moddifier:&Modifier|{
@@ -414,32 +413,20 @@ impl ApplicationState {
                                             });
                                         });
                                     };
-                                    add_or_delete(ui, &mut level.rooms, room_callback, Room::new("New Room".into(), Vector3::new(0., 0., 0.), Rad(0.), 5., default_tex.clone(), default_tex.clone(), default_tex.clone()),|a,b|{a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase())});
+                                    add_or_delete(ui, &mut level.rooms, room_callback, Room::new("New Room".into(), Vector3::new(0., 0., 0.), Deg(0.), 5., default_tex.clone(), default_tex.clone(), default_tex.clone()),|a,b|{a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase())});
                                 });
                                 CollapsingHeader::new(RichText::new("Hallways").heading()).default_open(true).show(ui,|ui|{
-                                    level.hallways.iter().enumerate().for_each(|(i,hallway)|{
-                                        if ui.label(format!("Hallway {}\n  Start: {}\n  End: {}",
-                                            i+1, 
-                                            match &hallway.start_location{
-                                                Some(location)=>{
-                                                    format!("\n    Room: {}\n    Door:{:?}",level.rooms[&location.room_index].name,location.door_id.0.get())
-                                                },
-                                                None=>{"None".into()}
-                                            }, 
-                                            match &hallway.end_location{
-                                                Some(location)=>{
-                                                    format!("\n    Room: {}\n     Door:{:?}",level.rooms[&location.room_index].name,location.door_id.0.get())
-                                                },
-                                                None=>{"None".into()}
-                                            }, 
-                                        )).clicked(){
+                                    let hallway_callback = |ui:&mut Ui,i: usize,hallway: &HallWay|{
+                                        if ui.label(format!("Hallway {}",i+1)).clicked(){
                                             self.screen_state_callbacks.push(Box::new(move |screen_state|{
                                                 if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
                                                     *selected_item = Some(SelectedItem::HallWay { hallway_index: i });
                                                 };
                                             }));
                                         };
-                                    })
+                                    };
+                                    add_or_delete2(ui, &mut level.hallways, hallway_callback, &HallWay::new(ControlRect::new(Vector3::new(0., 0., 0.), Deg(0.), Vector2::new(1.,3.)), ControlRect::new(Vector3::new(0., 0., 0.), Deg(0.), Vector2::new(1.,3.)), HallWayTexData::all(MeshTex::new(self.default_tex.clone(), TileStyle::tile_scale(1., true)))))
+
                                 })
                             });
                         });         
@@ -524,7 +511,7 @@ impl ApplicationState {
                                                 add_drag_value(ui,"X:",&mut room.position.x,0.1);
                                                 add_drag_value(ui,"Y:",&mut room.position.y,0.1);
                                                 add_drag_value(ui,"Z:",&mut room.position.z,0.1);
-                                                add_drag_value(ui,"Rot:",&mut room.rotation.0,0.01);
+                                                add_drag_value(ui,"Rot:",&mut room.rotation.0,1.);
                                             });
                                             ui.collapsing("Textures", |ui|{
                                                 add_texture_controls(ui, "Floor texture",&mut room.floor_texture);
@@ -565,7 +552,7 @@ impl ApplicationState {
                                                         add_drag_value(ui, "X:", &mut pos.x, 0.1);
                                                         add_drag_value(ui, "Y:", &mut pos.y, 0.1);
                                                         add_drag_value(ui, "Z:", &mut pos.z, 0.1);
-                                                        add_drag_value(ui, "Rot:", &mut dir.0, 0.01);
+                                                        add_drag_value(ui, "Rot:", &mut dir.0, 1.0);
                                                     });
                                                     ui.collapsing("Size", |ui|{
                                                         add_drag_value(ui, "X:", &mut size.x, 0.1);
@@ -615,7 +602,7 @@ impl ApplicationState {
                                                         add_drag_value(ui, "X:", &mut pos.x, 0.1);
                                                         add_drag_value(ui, "Y:", &mut pos.y, 0.1);
                                                         add_drag_value(ui, "Z:", &mut pos.z, 0.1);
-                                                        add_drag_value(ui, "Rot:", &mut dir.0, 0.01);
+                                                        add_drag_value(ui, "Rot:", &mut dir.0, 1.0);
                                                     });
                                                     ui.collapsing("Size", |ui|{
                                                         add_drag_value(ui, "X:", &mut size.x, 0.1);
@@ -688,10 +675,188 @@ impl ApplicationState {
                                                 add_drag_value(ui, "Y:", &mut door.size.y, 0.01);
                                             });
                                             door.wall = door.wall.modulo(num_walls as isize);
-                                            
                                         },
                                         SelectedItem::HallWay { hallway_index } => {
-
+                                            fn add_control_rect_controls(ui:&mut Ui,name:impl Into<WidgetText>,control_rect:&mut ControlRect){
+                                                ui.collapsing(name, |ui|{
+                                                    ui.collapsing("Position", |ui|{
+                                                        add_drag_value(ui, "X:", &mut control_rect.position.x, 0.1);
+                                                        add_drag_value(ui, "Y:", &mut control_rect.position.y, 0.1);
+                                                        add_drag_value(ui, "Z:", &mut control_rect.position.z, 0.1);
+                                                    });
+                                                    add_drag_value(ui, "Rot:", &mut control_rect.rotation.0, 1.0);
+                                                    ui.collapsing("Size", |ui|{
+                                                        add_drag_value(ui,"X:", &mut control_rect.size.x, 0.01);
+                                                        add_drag_value(ui,"Y:", &mut control_rect.size.y, 0.01);
+                                                    });
+                                                });
+                                            }
+                                            let hallway = &mut level.hallways[*hallway_index];
+                                            let add_hallway_texture_controls = |ui:&mut Ui,hallway_texs:&mut HallWayTexData|{
+                                                ui.collapsing("Textures", |ui|{
+                                                    add_texture_controls(ui,"Top",&mut hallway_texs.top);
+                                                    add_texture_controls(ui,"Bottom",&mut hallway_texs.bottom);
+                                                    add_texture_controls(ui,"Left",&mut hallway_texs.left);
+                                                    add_texture_controls(ui,"Right",&mut hallway_texs.right);
+                                                });
+                                            };
+                                            ui.collapsing("Start", |ui|{
+                                                ui.horizontal(|ui|{
+                                                    ui.label("Snap to door");
+                                                    toggle_ui(ui, &mut hallway.start_location.enabled);
+                                                });
+                                                CollapsingHeader::new("Starting Location").enabled(hallway.start_location.enabled).show(ui,|ui|{
+                                                    ComboBox::from_label("Room").selected_text(
+                                                        if let Some(room_id) = hallway.start_location.room_index{
+                                                            if let Some(room) = level.rooms.get(&room_id){
+                                                                room.name.clone()
+                                                            }else{
+                                                                "None".into()
+                                                            }
+                                                        }else{
+                                                            "None".into()
+                                                        })
+                                                        .show_ui(ui, |ui|{
+                                                            ui.selectable_value(&mut hallway.start_location.room_index, None, "None");
+                                                            level.rooms.iter().sorted_by(|a,b|a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase())).for_each(|(i,value)|{
+                                                            ui.selectable_value(&mut hallway.start_location.room_index, Some(i.clone()), &value.name);
+                                                        });
+                                                    });
+                                                    ComboBox::from_label("Door").selected_text(
+                                                        if let Some(room_id) = hallway.start_location.room_index{
+                                                            if let Some(door_id) = hallway.start_location.door_id{
+                                                                if let Some(room) = level.rooms.get(&room_id){                                                                    
+                                                                    if room.doors.contains_key(&door_id){
+                                                                        format!("{:?}",door_id)
+                                                                    }else{
+                                                                        "None".into()
+                                                                    }
+                                                                }else{
+                                                                    "None".into()
+                                                                }
+                                                            }else{
+                                                                "None".into()
+                                                            }
+                                                        }else{
+                                                            "None".into()
+                                                        }
+                                                    ).show_ui(ui, |ui|{
+                                                        ui.selectable_value(&mut hallway.start_location.door_id, None, "None");
+                                                        if let Some(room_id) = hallway.start_location.room_index{
+                                                            if let Some(room) = level.rooms.get(&room_id){
+                                                                room.doors.iter().sorted_by(|a,b|a.0.cmp(&b.0)).for_each(|(i,_)|{
+                                                                    ui.selectable_value(&mut hallway.start_location.door_id, Some(i.clone()), i.to_string());
+                                                                });
+                                                            }
+                                                        }
+                                                    });
+                                                });
+                                                ui.add_enabled_ui(!hallway.start_location.enabled, |ui|{
+                                                    add_control_rect_controls(ui, "Start", &mut hallway.start);
+                                                });
+                                                add_hallway_texture_controls(ui,&mut hallway.start_texture);
+                                            });
+                                            ui.collapsing("Middle", |ui|{
+                                                if hallway.middle.len()>0{
+                                                    let mut to_add: Option<usize> = None;
+                                                    let mut to_delete: Option<usize> = None;
+                                                    hallway.middle.iter_mut().enumerate().for_each(|(i,segment)|{
+                                                        ui.collapsing(format!("Segment {i}"), |ui|{
+                                                            add_control_rect_controls(ui, "Control Rect", &mut segment.0);
+                                                            add_hallway_texture_controls(ui,&mut segment.1);
+                                                        });
+                                                        ui.horizontal(|ui|{                                 
+                                                            if ui.button("−").clicked(){
+                                                                to_delete = Some(i);
+                                                            }
+                                                            if ui.button("+").clicked(){
+                                                                to_add = Some(i+1);
+                                                            }
+                                                        });
+                                                    });
+                                                    if let Some(i) = to_delete{
+                                                        hallway.middle.remove(i);
+                                                    }
+                                                    if let Some(i) = to_add{
+                                                        let c = &hallway.middle[i-1];
+                                                        let b = &hallway.middle.get(i).and_then(|a|{Some(&a.0)}).unwrap_or(&hallway.end);
+                                                        let a = if i==0{(&hallway.start,&hallway.start_texture)}else{(&c.0,&c.1)};
+                                                        hallway.middle.insert(i, (
+                                                            ControlRect{
+                                                                position: (a.0.position + b.position)/2.,
+                                                                rotation: b.position.xz().angle(a.0.position.xz()).into(),
+                                                                size: (a.0.size + b.size)/2.,
+                                                            },
+                                                            a.1.clone()
+                                                        ));
+                                                    }
+                                                }else{
+                                                    if ui.button("+").clicked(){
+                                                        hallway.middle.push((
+                                                            ControlRect{
+                                                                position: (hallway.start.position + hallway.end.position)/2.,
+                                                                rotation: hallway.end.position.xz().angle(hallway.start.position.xz()).into(),
+                                                                size: (hallway.start.size + hallway.end.size)/2.,
+                                                            },
+                                                            hallway.start_texture.clone()
+                                                        ));
+                                                    }
+                                                }
+                                            });
+                                            ui.collapsing("End", |ui|{
+                                                ui.horizontal(|ui|{
+                                                    ui.label("Snap to door");
+                                                    toggle_ui(ui, &mut hallway.end_location.enabled);
+                                                });
+                                                CollapsingHeader::new("Ending Location").enabled(hallway.end_location.enabled).show(ui,|ui|{
+                                                    ComboBox::from_label("Room").selected_text(
+                                                        if let Some(room_id) = hallway.end_location.room_index{
+                                                            if let Some(room) = level.rooms.get(&room_id){
+                                                                room.name.clone()
+                                                            }else{
+                                                                "None".into()
+                                                            }
+                                                        }else{
+                                                            "None".into()
+                                                        }).show_ui(ui, |ui|{
+                                                        ui.selectable_value(&mut hallway.end_location.room_index, None, "None");
+                                                        level.rooms.iter().sorted_by(|a,b|a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase())).for_each(|(i,value)|{
+                                                            ui.selectable_value(&mut hallway.end_location.room_index, Some(i.clone()), &value.name);
+                                                        });
+                                                    });
+                                                    ComboBox::from_label("Door").selected_text(
+                                                        if let Some(room_id) = hallway.end_location.room_index{
+                                                            if let Some(door_id) = hallway.end_location.door_id{
+                                                                if let Some(room) = level.rooms.get(&room_id){                                                                    
+                                                                    if room.doors.contains_key(&door_id){
+                                                                        format!("{:?}",door_id.0.get())
+                                                                    }else{
+                                                                        "None".into()
+                                                                    }
+                                                                }else{
+                                                                    "None".into()
+                                                                }
+                                                            }else{
+                                                                "None".into()
+                                                            }
+                                                        }else{
+                                                            "None".into()
+                                                        }
+                                                    ).show_ui(ui, |ui|{
+                                                        ui.selectable_value(&mut hallway.end_location.door_id, None, "None");
+                                                        if let Some(room_id) = hallway.end_location.room_index{
+                                                            if let Some(room) = level.rooms.get(&room_id){                                                                
+                                                                room.doors.iter().sorted_by(|a: &(&DoorId, &Door),b|a.0.cmp(&b.0)).for_each(|(i,_)|{
+                                                                    ui.selectable_value(&mut hallway.end_location.door_id, Some(i.clone()), i.to_string());
+                                                                });
+                                                            }
+                                                        }
+                                                    });
+                                                });
+                                                ui.add_enabled_ui(!hallway.end_location.enabled, |ui|{
+                                                    add_control_rect_controls(ui, "end", &mut hallway.end);
+                                                });
+                                            });
                                         },
                                     }
                                 }
@@ -721,8 +886,8 @@ impl ApplicationState {
         {
             if let ApplicationState{screen_state:ScreenState::Editor { editor_state,game_data,..},..} = self{
                 if let EditorState::LevelSelection { selected_level:Some(selected_level),.. } = editor_state.clone() {
-                    let default_tex = MeshTex::new(self.default_tex.clone(), TileStyle::tile_scale(1., true));
-                    *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone(),selected_item:None,new_moddifer:Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Rad(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() } };
+                    let default_tex: MeshTex = MeshTex::new(self.default_tex.clone(), TileStyle::tile_scale(1., true));
+                    *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone(),selected_item:None,new_moddifer:Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Deg(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() } };
                     self.level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
                 }
             }

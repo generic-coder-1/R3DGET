@@ -1,7 +1,7 @@
 use std::{collections::HashMap, f32::consts::PI, marker::PhantomData, ops::Deref, vec};
 
 use cgmath::{
-    num_traits::Signed, Array, Basis2, InnerSpace, Matrix2, MetricSpace, Rad, Rotation, Rotation2,
+    num_traits::Signed, Array, Basis2, InnerSpace, Matrix2, MetricSpace, Deg, Rotation, Rotation2,
     Vector2, Vector3, VectorSpace,
 };
 use earcutr::{self, earcut};
@@ -63,7 +63,7 @@ impl Deref for RoomId {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Room {
     pub position: Vector3<f32>,
-    pub rotation: Rad<f32>,
+    pub rotation: Deg<f32>,
     pub walls: Vec<Wall>,
     pub doors: HashMap<DoorId, Door>,
     pub height: f32,
@@ -77,7 +77,7 @@ impl Room {
     pub fn new(
         name: String,
         position: Vector3<f32>,
-        rotation: Rad<f32>,
+        rotation: Deg<f32>,
         height: f32,
         floor_texture: MeshTex,
         roof_texture: MeshTex,
@@ -105,8 +105,8 @@ impl Room {
         self.doors.insert(id.clone(), door);
         id
     }
-    pub fn get_control_rect(&self, id: &DoorId, away_from: bool) -> ControlRect {
-        let door = self.doors.get(id).expect("door doesn't exist");
+    pub fn get_control_rect(&self, id: &DoorId, away_from: bool) -> Option<ControlRect> {
+        let door = self.doors.get(id)?;
         let (start, end) = self
             .walls
             .iter()
@@ -130,18 +130,17 @@ impl Room {
 
         let position = Vector3::new(x, y, z) + self.position;
 
-        let wall_midpoint = Matrix2::from_angle(self.rotation) * (end.local_pos - start.local_pos);
-        let rotation = if away_from {
-            Vector2::unit_x().angle(wall_midpoint)
-        } else {
-            wall_midpoint.angle(Vector2::unit_x())
+        let mut rotation:Deg<f32> = Vector2::unit_x().angle((start.local_pos + end.local_pos)/2.).into();        
+        rotation+=Deg(90.);
+        if !away_from{
+            rotation+=Deg(180.);
         }
-        .0;
-        ControlRect {
+        rotation-=self.rotation;
+        Some(ControlRect {
             position,
-            rotation: Rad(rotation),
+            rotation: rotation,
             size: door.size,
-        }
+        })
     }
 }
 
@@ -365,7 +364,7 @@ impl Wall {
 pub enum Modifier {
     Ramp {
         pos: Vector3<f32>,
-        dir: Rad<f32>,
+        dir: Deg<f32>,
         size: Vector3<f32>,
         ramp_texture: MeshTex,
         wall_texture: MeshTex,
@@ -381,7 +380,7 @@ pub enum Modifier {
         pos: Vector3<f32>,
         size: Vector3<f32>,
         sides: Vec<MeshTex>,
-        dir: Rad<f32>,
+        dir: Deg<f32>,
         top_tex: MeshTex,
         bottom_tex: MeshTex,
     },
@@ -402,7 +401,7 @@ impl Modifier {
     pub fn gen_mesh(
         &self,
         true_position: Vector3<f32>,
-        true_dir: Rad<f32>,
+        true_dir: Deg<f32>,
         room_height: f32,
     ) -> Vec<Mesh> {
         let mut meshs = vec![];
@@ -701,7 +700,7 @@ impl Modifier {
                             ((side as f32 / sides.len() as f32) * 2. * PI + PI / 4.).cos() * size.x,
                             ((side as f32 / sides.len() as f32) * 2. * PI + PI / 4.).sin() * size.z,
                         );
-                        Basis2::from_angle(*dir - Rad(PI / 4.))
+                        Basis2::from_angle(*dir - Deg(PI / 4.))
                             .rotate_vector(Vector2::new(a.0, a.1))
                             .into()
                     })

@@ -3,7 +3,7 @@ use crate::{
     renderer::{camera::Camera, texture::TextureData},
 };
 use std::{collections::HashMap, f32::consts::PI};
-use cgmath::{Point3, Rad, Vector2, Vector3};
+use cgmath::{Point3, Deg, Vector2, Vector3};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +26,7 @@ impl LevelData {
             start_camera: CameraController::new(
                 0.,
                 0.,
-                Camera::new([0., 0., 0.], Rad(0.), Rad(0.)),
+                Camera::new([0., 0., 0.], Deg(0.), Deg(0.)),
             ),
             hallways: vec![],
             rooms: HashMap::new(),
@@ -41,7 +41,7 @@ impl LevelData {
             Room::new(
                 "default_room_1".into(),
                 [0., 0., 0.].into(),
-                Rad(0.1),
+                Deg(0.1),
                 5.,
                 defualt_mesh_tex.clone(),
                 defualt_mesh_tex.clone(),
@@ -50,7 +50,7 @@ impl LevelData {
             Room::new(
                 "default_room_2".into(),
                 [0., 0., 20.].into(),
-                Rad(0.),
+                Deg(0.),
                 3.,
                 defualt_mesh_tex.clone(),
                 defualt_mesh_tex.clone(),
@@ -104,13 +104,13 @@ impl LevelData {
             center:(super::room::VerticalAlign::Bottom,super::room::HorizontalAlign::Center),
         });
         let mut hallway = HallWay::new(
-            rooms[0].get_control_rect(&id1, true),
-            rooms[1].get_control_rect(&id2, false),
+            rooms[0].get_control_rect(&id1, true).unwrap(),
+            rooms[1].get_control_rect(&id2, false).unwrap(),
             HallWayTexData::all(defualt_mesh_tex.clone()),
         );
         rooms[0].moddifiers.push(super::room::Modifier::Ramp {
             pos: Vector3::new(0., 2., 0.),
-            dir: Rad(0.2),
+            dir: Deg(0.2),
             size: Vector3::new(1., 2., 3.),
             ramp_texture: defualt_mesh_tex.clone(),
             wall_texture: defualt_mesh_tex.clone(),
@@ -166,20 +166,22 @@ impl LevelData {
             pos: Vector3::new(3., 3., 3.),
             size: Vector3::new(1., 0.5, 2.),
             sides: (0..4).into_iter().map(|_| defualt_mesh_tex.clone()).collect_vec(),
-            dir: Rad(PI/4.),
+            dir: Deg(PI/4.),
             top_tex: defualt_mesh_tex.clone(),
             bottom_tex: defualt_mesh_tex.clone(),
         });
         let room1_id=RoomId::new();
         let room2_id=RoomId::new();
-        hallway.start_location = Some(DoorLocation {
-            room_index: room1_id,
-            door_id: id1,
-        });
-        hallway.end_location = Some(DoorLocation {
-            room_index: room2_id,
-            door_id: id2,
-        });
+        hallway.start_location = DoorLocation {
+            room_index: Some(room1_id),
+            door_id: Some(id1),
+            enabled:true,
+        };
+        hallway.end_location = DoorLocation {
+            room_index: Some(room2_id),
+            door_id: Some(id2),
+            enabled:true
+        };
         let room1 = rooms.remove(0);
         let room2 = rooms.remove(0);
         let mut actual_rooms = HashMap::new();
@@ -189,7 +191,7 @@ impl LevelData {
             start_camera: CameraController::new(
                 4.0,
                 0.4,
-                Camera::new(Point3::new(0.0, 2.0, 0.0), Rad(0.0), Rad(0.0)),
+                Camera::new(Point3::new(0.0, 2.0, 0.0), Deg(0.0), Deg(0.0)),
             ),
             hallways: vec![hallway],
             rooms:actual_rooms,
