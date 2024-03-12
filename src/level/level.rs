@@ -14,16 +14,19 @@ use super::{
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct LevelData {
-    pub start_camera: CameraController,
+pub struct LevelState {
+    pub camera_controler: CameraController,
     pub hallways: Vec<HallWay>,
     pub rooms: HashMap<RoomId,Room>,
 }
 
-impl LevelData {
+impl LevelState {
+    pub fn update(&mut self){
+        self.hallways.iter_mut().for_each(|hallway|{hallway.update_door_location(&self.rooms)});
+    }
     pub fn none() -> Self {
         Self {
-            start_camera: CameraController::new(
+            camera_controler: CameraController::new(
                 0.,
                 0.,
                 Camera::new([0., 0., 0.], Deg(0.), Deg(0.)),
@@ -188,7 +191,7 @@ impl LevelData {
         actual_rooms.insert(room1_id, room1);
         actual_rooms.insert(room2_id, room2);
         Self {
-            start_camera: CameraController::new(
+            camera_controler: CameraController::new(
                 4.0,
                 0.4,
                 Camera::new(Point3::new(0.0, 2.0, 0.0), Deg(0.0), Deg(0.0)),
@@ -196,26 +199,6 @@ impl LevelData {
             hallways: vec![hallway],
             rooms:actual_rooms,
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct LevelState {
-    pub camera_controler: CameraController,
-    pub hallways: Vec<HallWay>,
-    pub rooms: HashMap<RoomId,Room>,
-}
-
-impl LevelState {
-    pub fn from_level_data(data: &LevelData) -> Self {
-        Self {
-            camera_controler: data.start_camera.clone(),
-            hallways: data.hallways.clone(),
-            rooms: data.rooms.clone(),
-        }
-    }
-    pub fn update(&mut self){
-        self.hallways.iter_mut().for_each(|hallway|{hallway.update_door_location(&self.rooms)});
     }
 }
 

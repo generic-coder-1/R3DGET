@@ -1,5 +1,5 @@
-use crate::{camer_control, level::{hallway::{ControlRect, HallWay, HallWayTexData}, level::{LevelData, LevelState}, mesh::{Mesh, MeshTex, Meshable, TileStyle}, room::{Door, DoorId, HorizontalAlign, Modifier, Room, RoomId, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
-use egui::{emath, vec2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontFamily, FontId, Grid, ImageSource, RichText, ScrollArea, Ui, Vec2, WidgetText};
+use crate::{camer_control, level::{hallway::{ControlRect, HallWay, HallWayTexData}, level::LevelState, mesh::{Mesh, MeshTex, Meshable, TileStyle}, room::{Door, DoorId, HorizontalAlign, Modifier, Room, RoomId, VerticalAlign, Wall}}, more_stolen_code::FileDialog, renderer::{self, camera::Camera, texture::{TextureData, TextureId}}, stolen_code_to_update_dependencies};
+use egui::{emath, vec2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontFamily, FontId, FullOutput, Grid, ImageSource, RichText, ScrollArea, Ui, Vec2, WidgetText};
 use egui_modal::Modal;
 use instant::Instant;
 use itertools::Itertools;
@@ -30,7 +30,6 @@ pub struct ApplicationState{
     level_state:LevelState,
     last_render_time:Instant,
     platform:Platform,
-    screen_state_callbacks:Vec<Box<dyn FnOnce(&mut ScreenState)>>
 }
 
 
@@ -105,13 +104,13 @@ impl ApplicationState {
         
         let render_state: State = State::new(window, vec![], vec![]).await;
         let default_tex = TextureData::new(&render_state.default_texture, "default".into());
-        let mut level = LevelData::new(&default_tex);
-        level.start_camera = camer_control::CameraController::new(
+        let mut level = LevelState::new(&default_tex);
+        level.camera_controler = camer_control::CameraController::new(
             4.0,
             0.4,
             Camera::new(Point3::new(0.0, 0.0, -10.0), Deg(0.0), Deg(0.0)),
         );
-        let level_state = LevelState::from_level_data(&level);
+        let level_state = level.clone();
     
         let size = render_state.size;
         let platform = Platform::new(PlatformDescriptor {
@@ -130,7 +129,6 @@ impl ApplicationState {
                 game_data: None,
                 create_new:false,
             },
-            screen_state_callbacks:vec![],
             default_tex:default_tex,
             cursor_inside:false,
             interacting_with_ui: true,
@@ -140,7 +138,8 @@ impl ApplicationState {
             platform,
         }
     }
-    pub fn ui(&mut self, ctx: &Context) {
+    pub fn ui(&mut self, ctx: &Context) ->FullOutput{
+        let mut screen_state_callbacks:Vec<Box<dyn FnOnce(&mut ScreenState)>> = vec![];
         if let ScreenState::MainMenu { opened_file:Some(folder_path), game_data:Some(game_data),.. } = &self.screen_state{
             game_data.textures.iter().for_each(|(name,data,_)|{
                 self.render_state.textures.insert(name.clone(), self.render_state.create_texture(data.clone()));
@@ -243,7 +242,7 @@ impl ApplicationState {
                                         return acc;
                                     });
                                     game_data.levels.push(format!("new_level_{}",num+1));
-                                    game_data.levels_data.insert(format!("new_level_{}",num+1), LevelData::new(&self.default_tex));
+                                    game_data.levels_data.insert(format!("new_level_{}",num+1), LevelState::new(&self.default_tex));
                                     possible_new_level_names.insert(format!("new_level_{}",num+1), format!("new_level_{}",num+1));
                                 }
                                 if ui.button("save").clicked(){
@@ -306,9 +305,19 @@ impl ApplicationState {
                                 let mut add_button = |text:&str|{
                                     ui.add(Button::new(text).frame(false))
                                 };
-                                if add_button("main_menu").clicked(){
-                                    self.screen_state_callbacks.push(Box::new(|screen_state|{
+                                if add_button("Main Menu").clicked(){
+                                    screen_state_callbacks.push(Box::new(|screen_state|{
                                         *screen_state = ScreenState::MainMenu { opened_file: None, open_file_dialog: None, game_data: None, create_new: false }
+                                    }));
+                                }                                
+                                if add_button("Save").clicked(){
+                                    let level_state = level.clone();
+                                    let temp: String = selected_level.clone();
+                                    screen_state_callbacks.push(Box::new(move |screen_state|{
+                                        if let ScreenState::Editor { game_data, folder_path, .. }  = screen_state{
+                                            *game_data.levels_data.get_mut(&temp).expect("not possible") = level_state;
+                                            game_data.update_folder(folder_path).expect("failed to save");
+                                        }
                                     }));
                                 }
                             });
@@ -363,7 +372,7 @@ impl ApplicationState {
                                         ui.collapsing(format!("Room: {}",&room.name), |ui|{
                                             if ui.label("Room").clicked(){
                                                 let i2 = i.clone();
-                                                self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                screen_state_callbacks.push(Box::new(move |screen_state|{
                                                     if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
                                                         *selected_item = Some(SelectedItem::Room { index: i2 });
                                                     };
@@ -388,7 +397,7 @@ impl ApplicationState {
                                                         crate::level::room::Modifier::Disc { .. } => "Platform",
                                                     }).clicked(){
                                                         let i2 = i.clone();
-                                                        self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                        screen_state_callbacks.push(Box::new(move |screen_state|{
                                                             if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
                                                                 *selected_item = Some(SelectedItem::Modifer { room_index: i2,modifer_index:j });
                                                             }
@@ -402,7 +411,7 @@ impl ApplicationState {
                                                     if ui.label(format!("Id:{}",id.0.get())).clicked(){
                                                         let a =id.clone();
                                                         let i2 = i.clone();
-                                                        self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                                        screen_state_callbacks.push(Box::new(move |screen_state|{
                                                             if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
                                                                 *selected_item = Some(SelectedItem::Door { room_index: i2, door_id: a });
                                                             }
@@ -416,9 +425,9 @@ impl ApplicationState {
                                     add_or_delete(ui, &mut level.rooms, room_callback, Room::new("New Room".into(), Vector3::new(0., 0., 0.), Deg(0.), 5., default_tex.clone(), default_tex.clone(), default_tex.clone()),|a,b|{a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase())});
                                 });
                                 CollapsingHeader::new(RichText::new("Hallways").heading()).default_open(true).show(ui,|ui|{
-                                    let hallway_callback = |ui:&mut Ui,i: usize,hallway: &HallWay|{
+                                    let hallway_callback = |ui:&mut Ui,i: usize,_hallway: &HallWay|{
                                         if ui.label(format!("Hallway {}",i+1)).clicked(){
-                                            self.screen_state_callbacks.push(Box::new(move |screen_state|{
+                                            screen_state_callbacks.push(Box::new(move |screen_state|{
                                                 if let ScreenState::Editor { editor_state:EditorState::LevelEditing {selected_item, .. } , .. } = screen_state{
                                                     *selected_item = Some(SelectedItem::HallWay { hallway_index: i });
                                                 };
@@ -437,24 +446,37 @@ impl ApplicationState {
                                 egui::include_image!("..\\renderer\\default.png")
                             }
                         };
+                        let default_tex = self.default_tex.clone();
                         let add_texture_controls = |ui:&mut Ui,name:&str,texture:&mut MeshTex|{
                             ui.collapsing(name,|ui|{
                                 ui.menu_button(format!("Id: {}",texture.id.id), |ui|{
                                     egui::Grid::new("texture selection grid").show(ui, |ui|{
-                                        game_data.textures.iter().chunks(3).into_iter().for_each(|chunks|{
-                                            chunks.for_each(|(name,_,_)|{
-                                                ui.vertical(|ui|{
-                                                    if ui.button(name.as_ref()).clicked(){
-                                                        texture.id = TextureData::new(self.render_state.textures.get(name).unwrap(), name.clone());
-                                                        ui.close_menu();
-                                                    }
-                                                    ui.allocate_ui(Vec2::new(100., 100.), |ui|{
-                                                        ui.add(egui::Image::new(get_egui_image_sorce(&name)).max_width(20.));
-                                                    });
+                                        let mut i = 1;
+                                        ui.vertical(|ui|{
+                                            if ui.button("Default").clicked(){
+                                                texture.id = default_tex.clone();
+                                                ui.close_menu();
+                                            }
+                                            ui.allocate_ui(Vec2::new(100., 100.), |ui|{
+                                                ui.add(egui::Image::new(get_egui_image_sorce(&"Default".into())).max_width(20.));
+                                            });
+                                        });
+                                        for (name,_,_) in game_data.textures.iter(){
+                                            ui.vertical(|ui|{
+                                                if ui.button(name.as_ref()).clicked(){
+                                                    texture.id = TextureData::new(self.render_state.textures.get(name).unwrap(), name.clone());
+                                                    ui.close_menu();
+                                                }
+                                                ui.allocate_ui(Vec2::new(100., 100.), |ui|{
+                                                    ui.add(egui::Image::new(get_egui_image_sorce(&name)).max_width(20.));
                                                 });
                                             });
-                                            ui.end_row();
-                                        });
+                                            i+=1;
+                                            if i>2{
+                                                i=0;
+                                                ui.end_row()
+                                            }
+                                        }
                                     });
                                     
                                 });
@@ -866,9 +888,11 @@ impl ApplicationState {
                 }
             },
         }
-        self.screen_state_callbacks.drain(..).for_each(|callback|{
+        let return_val = ctx.end_frame();
+        screen_state_callbacks.into_iter().for_each(|callback: Box<dyn FnOnce(&mut ScreenState)>|{
             callback(&mut self.screen_state);
-        })
+        });
+        return_val
     }
     
     pub fn input_device(&mut self, event: &DeviceEvent, ){
@@ -888,7 +912,7 @@ impl ApplicationState {
                 if let EditorState::LevelSelection { selected_level:Some(selected_level),.. } = editor_state.clone() {
                     let default_tex: MeshTex = MeshTex::new(self.default_tex.clone(), TileStyle::tile_scale(1., true));
                     *editor_state = EditorState::LevelEditing { selected_level: selected_level.clone(),selected_item:None,new_moddifer:Modifier::Disc { pos: Vector3::new(0., 0., 0.), size: Vector3::new(1., 1., 1.), sides: vec![default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone(),default_tex.clone()], dir: Deg(0.), top_tex: default_tex.clone(), bottom_tex: default_tex.clone() } };
-                    self.level_state = LevelState::from_level_data(&game_data.levels_data[&selected_level]);
+                    self.level_state = game_data.levels_data[&selected_level].clone();
                 }
             }
         }
@@ -980,8 +1004,7 @@ impl ApplicationState {
     
                         let full_output = {
                             let ctx = self.platform.context();
-                            self.ui(&ctx);
-                            ctx.end_frame()
+                            self.ui(&ctx)
                         };
                         
                         self.render_state.update(dt, &mut self.level_state.camera_controler);

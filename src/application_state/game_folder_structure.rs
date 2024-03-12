@@ -1,15 +1,12 @@
-use crate::{level::level::LevelData, renderer::texture::TextureId};
+use crate::{level::{level::LevelState, room::Chain}, renderer::texture::TextureId};
+use core::result::Result;
 use anyhow::Ok;
 use cfg_if::cfg_if;
 use itertools::Itertools;
 use ron::ser::PrettyConfig;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
-    ffi::OsStr,
-    fs::{self, create_dir, read, read_dir, read_to_string},
-    path::{Path, PathBuf},
-    sync::Arc,
+    collections::HashMap, ffi::OsStr, fs::{self, create_dir, read, read_dir, read_to_string}, ops::ControlFlow, path::{Path, PathBuf}, sync::Arc
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -29,7 +26,7 @@ impl GameConfigFile {
 pub struct GameData {
     pub config_file: GameConfigFile,
     pub levels: Vec<String>,
-    pub levels_data: HashMap<String, LevelData>,
+    pub levels_data: HashMap<String, LevelState>,
     pub textures: Vec<(TextureId, Arc<[u8]>, Box<str>)>,
     pub current_level: Option<String>,
 }
@@ -48,7 +45,20 @@ impl GameData {
         self.config_file.level_order = self.levels.clone();
     }
 
-    pub fn update_folder(&self, path: PathBuf) -> anyhow::Result<()> {
+    pub fn update_folder(&self, path: &PathBuf) -> anyhow::Result<()> {
+        fs::write(path.clone().chain(|a|{a.push("config.ron")}), ron::ser::to_string_pretty(&self.config_file,PrettyConfig::new())?)?;
+        if self.levels_data.iter().try_for_each(|(level_name,level)|{
+            match fs::write(path.clone().chain(|a|{a.push(format!("levels/{}.ron",level_name))}), match ron::ser::to_string_pretty(&level,PrettyConfig::new()){
+                Result::Ok(a) => a,
+                Err(_) => return ControlFlow::Break(()),
+            }){
+                Result::Ok(_)=>{},
+                Err(_)=>return ControlFlow::Break(())
+            };
+            return ControlFlow::Continue(());
+        }).is_break(){
+            return Ok(());
+        };
         Ok(())
     }
 
@@ -118,7 +128,7 @@ impl GameData {
         let config_file: GameConfigFile =
             ron::from_str(read_to_string(path.join("config.ron")).ok()?.as_str()).ok()?;
         let mut levels: Vec<String> = vec![];
-        let mut levels_data: HashMap<String, LevelData> = HashMap::new();
+        let mut levels_data: HashMap<String, LevelState> = HashMap::new();
         for level_name in &config_file.level_order {
             levels.push(level_name.clone());
             levels_data.insert(
