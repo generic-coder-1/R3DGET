@@ -13,17 +13,17 @@
         sensitivity: 0.4,
         self_camera: (
             position: (
-                x: 0.24388188,
-                y: 8.735604,
-                z: 1.8398296,
+                x: 0.0,
+                y: 2.0,
+                z: 0.0,
             ),
-            yaw: (5.204823),
-            pitch: (-0.5765503),
+            yaw: (0.0),
+            pitch: (0.0),
         ),
     ),
     hallways: [],
     rooms: {
-        7: (
+        2: (
             position: (
                 x: 0.0,
                 y: 0.0,
@@ -213,7 +213,7 @@
                 ),
                 fliped: (false, false),
             ),
-            name: "default_room_1",
+            name: "default_room",
         ),
     },
 )
