@@ -580,109 +580,111 @@ impl Modifier {
                 height,
                 floor_texture,
             } => {
-                let mut floor_points = walls.iter().map(|wall| wall.local_pos).collect_vec();
-                floor_points.iter_mut().for_each(|point| {
-                    *point = Basis2::from_angle(true_dir).rotate_vector(*point);
-                });
-                let (e_points, e_holes, dims) = earcutr::flatten(&vec![floor_points
-                    .iter()
-                    .map(|point| vec![point.x, point.y])
-                    .collect_vec()]);
-                let mut floor_indices = earcut(e_points.as_slice(), e_holes.as_slice(), dims)
-                    .expect("modifer floor didn't earcut properly :(");
-                let floor_tex_points = floor_texture.get_tex_coords(
-                    &floor_points
-                        .iter()
-                        .map(|point| Into::<[f32; 2]>::into(*point).into())
-                        .collect_vec(),
-                );
-                if floor_points
-                    .iter()
-                    .circular_tuple_windows::<(_, _)>()
-                    .fold(0., |acc, (point1, point2)| {
-                        acc + ((point2.x - point1.x) * (point2.y + point1.y))
-                    })
-                    .is_negative()
-                {
-                    floor_indices.reverse();
-                }
-                if *on_roof {
-                    floor_indices.reverse();
-                }
-                let floor_mesh = Mesh {
-                    textrure: floor_texture.id.id.clone(),
-                    vertices: e_points
-                        .into_iter()
-                        .tuples()
-                        .enumerate()
-                        .map(|(i, (a, b))| MeshVertex {
-                            position: {
-                                let mut position = Vector2::new(a, b).extend(if *on_roof {
-                                    room_height - *height
-                                } else {
-                                    *height
-                                });
-                                position.swap_elements(1, 2);
-                                position += true_position;
-                                Into::<[f32; 3]>::into(position)
-                            },
-                            tex_coords: floor_tex_points[i],
-                        })
-                        .collect_vec(),
-                    indices: floor_indices
-                        .into_iter()
-                        .map(|index| index as u16)
-                        .collect_vec(),
-                };
-                meshs.push(floor_mesh);
-                walls
-                    .iter()
-                    .circular_tuple_windows::<(_, _)>()
-                    .for_each(|(wall_1, wall_2)| {
-                        let top_right = [wall_1.local_pos.distance(wall_2.local_pos), *height];
-                        let dir = (wall_2.local_pos - wall_1.local_pos).normalize();
-                        let wall_points = vec![
-                            [0., 0.],
-                            [top_right[0], 0.],
-                            Into::<[f32; 2]>::into(top_right),
-                            [0., top_right[1]],
-                        ];
-                        let points3 = wall_points
-                            .iter()
-                            .map(|point2| {
-                                let y = point2[1]
-                                    + true_position.y
-                                    + if *on_roof { room_height - height } else { 0. };
-                                let (mut x, mut z) = (Matrix2::from_angle(true_dir)
-                                    * (point2[0] * dir + wall_1.local_pos))
-                                    .into();
-                                x += true_position.x;
-                                z += true_position.z;
-                                let position = Vector3::new(x, y, z);
-                                position
-                            })
-                            .collect_vec();
-
-                        let wall_tex_coords = wall_1.wall_texture.get_tex_coords(
-                            &wall_points.iter().map(|a| (a[0], a[1])).collect_vec(),
-                        );
-
-                        let wall_mesh = points3.into_iter().enumerate().fold(
-                            Mesh {
-                                textrure: wall_1.wall_texture.id.id.clone(),
-                                vertices: vec![],
-                                indices: vec![0, 3, 2, 0, 2, 1],
-                            },
-                            |mut acc, (i, point)| {
-                                acc.vertices.push(MeshVertex {
-                                    position: point.into(),
-                                    tex_coords: wall_tex_coords[i],
-                                });
-                                acc
-                            },
-                        );
-                        meshs.push(wall_mesh);
+                if walls.len()>0{
+                    let mut floor_points = walls.iter().map(|wall| wall.local_pos).collect_vec();
+                    floor_points.iter_mut().for_each(|point| {
+                        *point = Basis2::from_angle(true_dir).rotate_vector(*point);
                     });
+                    let (e_points, e_holes, dims) = earcutr::flatten(&vec![floor_points
+                        .iter()
+                        .map(|point| vec![point.x, point.y])
+                        .collect_vec()]);
+                    let mut floor_indices = earcut(e_points.as_slice(), e_holes.as_slice(), dims)
+                        .expect("modifer floor didn't earcut properly :(");
+                    let floor_tex_points = floor_texture.get_tex_coords(
+                        &floor_points
+                            .iter()
+                            .map(|point| Into::<[f32; 2]>::into(*point).into())
+                            .collect_vec(),
+                    );
+                    if floor_points
+                        .iter()
+                        .circular_tuple_windows::<(_, _)>()
+                        .fold(0., |acc, (point1, point2)| {
+                            acc + ((point2.x - point1.x) * (point2.y + point1.y))
+                        })
+                        .is_negative()
+                    {
+                        floor_indices.reverse();
+                    }
+                    if *on_roof {
+                        floor_indices.reverse();
+                    }
+                    let floor_mesh = Mesh {
+                        textrure: floor_texture.id.id.clone(),
+                        vertices: e_points
+                            .into_iter()
+                            .tuples()
+                            .enumerate()
+                            .map(|(i, (a, b))| MeshVertex {
+                                position: {
+                                    let mut position = Vector2::new(a, b).extend(if *on_roof {
+                                        room_height - *height
+                                    } else {
+                                        *height
+                                    });
+                                    position.swap_elements(1, 2);
+                                    position += true_position;
+                                    Into::<[f32; 3]>::into(position)
+                                },
+                                tex_coords: floor_tex_points[i],
+                            })
+                            .collect_vec(),
+                        indices: floor_indices
+                            .into_iter()
+                            .map(|index| index as u16)
+                            .collect_vec(),
+                    };
+                    meshs.push(floor_mesh);
+                    walls
+                        .iter()
+                        .circular_tuple_windows::<(_, _)>()
+                        .for_each(|(wall_1, wall_2)| {
+                            let top_right = [wall_1.local_pos.distance(wall_2.local_pos), *height];
+                            let dir = (wall_2.local_pos - wall_1.local_pos).normalize();
+                            let wall_points = vec![
+                                [0., 0.],
+                                [top_right[0], 0.],
+                                Into::<[f32; 2]>::into(top_right),
+                                [0., top_right[1]],
+                            ];
+                            let points3 = wall_points
+                                .iter()
+                                .map(|point2| {
+                                    let y = point2[1]
+                                        + true_position.y
+                                        + if *on_roof { room_height - height } else { 0. };
+                                    let (mut x, mut z) = (Matrix2::from_angle(true_dir)
+                                        * (point2[0] * dir + wall_1.local_pos))
+                                        .into();
+                                    x += true_position.x;
+                                    z += true_position.z;
+                                    let position = Vector3::new(x, y, z);
+                                    position
+                                })
+                                .collect_vec();
+
+                            let wall_tex_coords = wall_1.wall_texture.get_tex_coords(
+                                &wall_points.iter().map(|a| (a[0], a[1])).collect_vec(),
+                            );
+
+                            let wall_mesh = points3.into_iter().enumerate().fold(
+                                Mesh {
+                                    textrure: wall_1.wall_texture.id.id.clone(),
+                                    vertices: vec![],
+                                    indices: vec![0, 3, 2, 0, 2, 1],
+                                },
+                                |mut acc, (i, point)| {
+                                    acc.vertices.push(MeshVertex {
+                                        position: point.into(),
+                                        tex_coords: wall_tex_coords[i],
+                                    });
+                                    acc
+                                },
+                            );
+                            meshs.push(wall_mesh);
+                        });
+                }
             }
             Modifier::Disc {
                 pos,
