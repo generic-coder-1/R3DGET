@@ -458,13 +458,12 @@ impl ApplicationState {
                                     egui::Grid::new("texture selection grid").show(ui, |ui|{
                                         let mut i = 1;
                                         ui.vertical(|ui|{
-                                            if ui.button("Default").clicked(){
-                                                texture.id = default_tex.clone();
-                                                ui.close_menu();
-                                            }
-                                            ui.allocate_ui(Vec2::new(100., 100.), |ui|{
-                                                ui.add(egui::Image::new(get_egui_image_sorce(&"Default".into())).max_width(20.));
-                                            });
+                                            let respose = ui.add(egui::Image::new(get_egui_image_sorce(&"Default".into())).sense(Sense::click().union(Sense::hover())).max_width(20.));
+                                                    if respose.clicked(){
+                                                        texture.id = default_tex.clone();
+                                                        ui.close_menu();
+                                                    }
+                                                    respose.on_hover_text("default");
                                         });
                                         for (name,_,_) in game_data.textures.iter(){
                                             ui.vertical(|ui|{
@@ -540,6 +539,7 @@ impl ApplicationState {
                                                     add_drag_value(ui,"Y:",&mut room.position.y,0.1);
                                                     add_drag_value(ui,"Z:",&mut room.position.z,0.1);
                                                     add_drag_value(ui,"Rot:",&mut room.rotation.0,1.);
+                                                    add_drag_value(ui,"Height",&mut room.height, 0.1);
                                                 });
                                                 ui.collapsing("Textures", |ui|{
                                                     add_texture_controls(ui, "Floor texture",&mut room.floor_texture);

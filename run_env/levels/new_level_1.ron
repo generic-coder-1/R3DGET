@@ -13,15 +13,107 @@
         sensitivity: 0.4,
         self_camera: (
             position: (
-                x: 3.0992224,
-                y: 3.2451794,
-                z: 0.7543772,
+                x: -0.53585726,
+                y: -53.46303,
+                z: -16.955126,
             ),
-            yaw: (16.794283),
-            pitch: (-0.27400038),
+            yaw: (-60.12015),
+            pitch: (-1.1678623),
         ),
     ),
-    hallways: [],
+    hallways: [
+        (
+            start: (
+                position: (
+                    x: 0.0,
+                    y: 0.0,
+                    z: -6.0,
+                ),
+                rotation: (180.0),
+                size: (
+                    x: 1.5,
+                    y: 1.5,
+                ),
+            ),
+            start_texture: (
+                top: (
+                    id: (
+                        id: "dark_coble",
+                        ratio: 1.0,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: (
+                        specific: (10.0, 10.0),
+                        scale: (10.0, true),
+                        is_specific: false,
+                    ),
+                    fliped: (false, true),
+                ),
+                bottom: (
+                    id: (
+                        id: "dark_coble",
+                        ratio: 1.0,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: (
+                        specific: (10.0, 10.0),
+                        scale: (10.0, true),
+                        is_specific: false,
+                    ),
+                    fliped: (false, false),
+                ),
+                left: (
+                    id: (
+                        id: "dark_coble",
+                        ratio: 1.0,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: (
+                        specific: (10.0, 10.0),
+                        scale: (10.0, true),
+                        is_specific: false,
+                    ),
+                    fliped: (false, false),
+                ),
+                right: (
+                    id: (
+                        id: "dark_coble",
+                        ratio: 1.0,
+                    ),
+                    offset: (0.0, 0.0),
+                    tile: (
+                        specific: (10.0, 10.0),
+                        scale: (10.0, true),
+                        is_specific: false,
+                    ),
+                    fliped: (true, false),
+                ),
+            ),
+            middle: [],
+            end: (
+                position: (
+                    x: 0.0,
+                    y: -8.610001,
+                    z: -16.0,
+                ),
+                rotation: (180.0),
+                size: (
+                    x: 1.0,
+                    y: 1.0,
+                ),
+            ),
+            start_location: (
+                room_index: Some(2),
+                door_id: Some(2),
+                enabled: true,
+            ),
+            end_location: (
+                room_index: Some(3),
+                door_id: Some(2),
+                enabled: true,
+            ),
+        ),
+    ],
     rooms: {
         2: (
             position: (
@@ -29,7 +121,7 @@
                 y: 0.0,
                 z: 0.0,
             ),
-            rotation: (0.1),
+            rotation: (0.0),
             walls: [
                 (
                     local_pos: (
@@ -193,7 +285,7 @@
                     ),
                     size: (
                         x: 1.5,
-                        y: 3.0,
+                        y: 1.5,
                     ),
                     center: (Bottom, Center),
                 ),
@@ -674,13 +766,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -693,13 +785,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -712,13 +804,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -731,13 +823,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -750,13 +842,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -769,13 +861,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -788,13 +880,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -807,13 +899,13 @@
                             ),
                             wall_texture: (
                                 id: (
-                                    id: "default",
+                                    id: "marble",
                                     ratio: 1.0,
                                 ),
                                 offset: (0.0, 0.0),
                                 tile: (
                                     specific: (10.0, 10.0),
-                                    scale: (1.0, true),
+                                    scale: (3.0, true),
                                     is_specific: false,
                                 ),
                                 fliped: (false, false),
@@ -830,7 +922,338 @@
                         offset: (0.0, 0.0),
                         tile: (
                             specific: (1.5, 1.5),
-                            scale: (4.6, true),
+                            scale: (3.0, true),
+                            is_specific: false,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                Ramp(
+                    pos: (
+                        x: -4.0,
+                        y: 2.0,
+                        z: 2.0,
+                    ),
+                    dir: (90.0),
+                    size: (
+                        x: -4.0,
+                        y: -0.51,
+                        z: 1.0,
+                    ),
+                    ramp_texture: (
+                        id: (
+                            id: "table",
+                            ratio: 1.5027323,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 1.0),
+                            scale: (1.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "table",
+                            ratio: 1.5027323,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (10.0, 10.0),
+                            scale: (1.0, true),
+                            is_specific: false,
+                        ),
+                        fliped: (false, false),
+                    ),
+                    bottom_texture: (
+                        id: (
+                            id: "table",
+                            ratio: 1.5027323,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 1.0),
+                            scale: (1.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                Disc(
+                    pos: (
+                        x: -4.5,
+                        y: 2.2,
+                        z: 1.5,
+                    ),
+                    size: (
+                        x: 0.25,
+                        y: 0.5,
+                        z: 0.25,
+                    ),
+                    sides: [
+                        (
+                            id: (
+                                id: "cookies",
+                                ratio: 1.5025042,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "cookies",
+                                ratio: 1.5025042,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "cookies",
+                                ratio: 1.5025042,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "cookies",
+                                ratio: 1.5025042,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                    ],
+                    dir: (0.0),
+                    top_tex: (
+                        id: (
+                            id: "cookies",
+                            ratio: 1.5025042,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (10.0, 10.0),
+                            scale: (1.0, true),
+                            is_specific: false,
+                        ),
+                        fliped: (false, false),
+                    ),
+                    bottom_tex: (
+                        id: (
+                            id: "default",
+                            ratio: 1.0,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (10.0, 10.0),
+                            scale: (1.0, true),
+                            is_specific: false,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                Disc(
+                    pos: (
+                        x: -4.5,
+                        y: 2.2,
+                        z: 0.5,
+                    ),
+                    size: (
+                        x: 0.25,
+                        y: 0.5,
+                        z: 0.25,
+                    ),
+                    sides: [
+                        (
+                            id: (
+                                id: "eye",
+                                ratio: 1.0,
+                            ),
+                            offset: (0.04, 0.0),
+                            tile: (
+                                specific: (0.8, 1.0),
+                                scale: (0.4, false),
+                                is_specific: true,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "eye",
+                                ratio: 1.0,
+                            ),
+                            offset: (0.0, -0.09),
+                            tile: (
+                                specific: (0.8, 1.0),
+                                scale: (1.0, true),
+                                is_specific: true,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "eye",
+                                ratio: 1.0,
+                            ),
+                            offset: (0.05, 0.08),
+                            tile: (
+                                specific: (0.8, 1.0),
+                                scale: (1.0, false),
+                                is_specific: true,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "eye",
+                                ratio: 1.0,
+                            ),
+                            offset: (0.04, -0.06),
+                            tile: (
+                                specific: (0.8, 1.0),
+                                scale: (1.0, true),
+                                is_specific: true,
+                            ),
+                            fliped: (false, false),
+                        ),
+                    ],
+                    dir: (0.0),
+                    top_tex: (
+                        id: (
+                            id: "eye",
+                            ratio: 1.0,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (0.2, 0.2),
+                            scale: (1.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                    bottom_tex: (
+                        id: (
+                            id: "default",
+                            ratio: 1.0,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (10.0, 10.0),
+                            scale: (1.0, true),
+                            is_specific: false,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                Disc(
+                    pos: (
+                        x: -4.5,
+                        y: 2.0,
+                        z: -0.85,
+                    ),
+                    size: (
+                        x: 0.3,
+                        y: 0.01,
+                        z: 0.85,
+                    ),
+                    sides: [
+                        (
+                            id: (
+                                id: "hand",
+                                ratio: 0.83206934,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "hand",
+                                ratio: 0.83206934,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "hand",
+                                ratio: 0.83206934,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                        (
+                            id: (
+                                id: "hand",
+                                ratio: 0.83206934,
+                            ),
+                            offset: (0.0, 0.0),
+                            tile: (
+                                specific: (10.0, 10.0),
+                                scale: (1.0, true),
+                                is_specific: false,
+                            ),
+                            fliped: (false, false),
+                        ),
+                    ],
+                    dir: (0.0),
+                    top_tex: (
+                        id: (
+                            id: "hand",
+                            ratio: 0.83206934,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 1.0),
+                            scale: (1.0, false),
+                            is_specific: true,
+                        ),
+                        fliped: (true, true),
+                    ),
+                    bottom_tex: (
+                        id: (
+                            id: "default",
+                            ratio: 1.0,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (10.0, 10.0),
+                            scale: (1.0, true),
                             is_specific: false,
                         ),
                         fliped: (false, false),
@@ -863,7 +1286,160 @@
                 ),
                 fliped: (false, false),
             ),
-            name: "default_room",
+            name: "main room",
+        ),
+        3: (
+            position: (
+                x: 0.0,
+                y: -57.61,
+                z: -17.0,
+            ),
+            rotation: (0.0),
+            walls: [
+                (
+                    local_pos: (
+                        x: -1.0,
+                        y: -1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "cookies",
+                            ratio: 1.5025042,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 20.0),
+                            scale: (4.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: 1.0,
+                        y: -1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "cookies",
+                            ratio: 1.5025042,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 20.0),
+                            scale: (1.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: 1.0,
+                        y: 1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "cookies",
+                            ratio: 1.5025042,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 20.0),
+                            scale: (1.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+                (
+                    local_pos: (
+                        x: -1.0,
+                        y: 1.0,
+                    ),
+                    wall_texture: (
+                        id: (
+                            id: "cookies",
+                            ratio: 1.5025042,
+                        ),
+                        offset: (0.0, 0.0),
+                        tile: (
+                            specific: (1.0, 20.0),
+                            scale: (1.0, true),
+                            is_specific: true,
+                        ),
+                        fliped: (false, false),
+                    ),
+                ),
+            ],
+            doors: {
+                5: (
+                    wall: 3,
+                    offset: (
+                        x: -0.125,
+                        y: 0.0,
+                    ),
+                    size: (
+                        x: 0.75,
+                        y: 1.75,
+                    ),
+                    center: (Bottom, Right),
+                ),
+                2: (
+                    wall: 2,
+                    offset: (
+                        x: 0.0,
+                        y: 0.0,
+                    ),
+                    size: (
+                        x: 1.0,
+                        y: 1.0,
+                    ),
+                    center: (Top, Center),
+                ),
+                4: (
+                    wall: 3,
+                    offset: (
+                        x: 0.125,
+                        y: 0.0,
+                    ),
+                    size: (
+                        x: 0.75,
+                        y: 1.75,
+                    ),
+                    center: (Bottom, Left),
+                ),
+            },
+            height: 50.0,
+            moddifiers: [],
+            floor_texture: (
+                id: (
+                    id: "eye",
+                    ratio: 1.0,
+                ),
+                offset: (0.0, 0.0),
+                tile: (
+                    specific: (1.0, 1.0),
+                    scale: (1.0, true),
+                    is_specific: true,
+                ),
+                fliped: (false, false),
+            ),
+            roof_texture: (
+                id: (
+                    id: "dark_coble",
+                    ratio: 1.0,
+                ),
+                offset: (0.0, 0.0),
+                tile: (
+                    specific: (10.0, 10.0),
+                    scale: (10.0, true),
+                    is_specific: false,
+                ),
+                fliped: (false, false),
+            ),
+            name: "cookie pit",
         ),
     },
 )
