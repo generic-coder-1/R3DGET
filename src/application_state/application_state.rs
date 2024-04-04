@@ -309,7 +309,14 @@ impl ApplicationState {
                                     screen_state_callbacks.push(Box::new(|screen_state|{
                                         *screen_state = ScreenState::MainMenu { opened_file: None, open_file_dialog: None, game_data: None, create_new: false }
                                     }));
-                                }                                
+                                }        
+                                if add_button("Level Select").clicked(){
+                                    screen_state_callbacks.push(Box::new(|screen_state|{
+                                        if let ScreenState::Editor { editor_state, game_data, .. } = screen_state{
+                                            *editor_state = EditorState::LevelSelection { possible_new_level_names: game_data.levels.iter().map(|level_name|(level_name.clone(),level_name.clone())).collect(), selected_level: None };
+                                        }
+                                    }));
+                                }                        
                                 if add_button("Save").clicked(){
                                     let level_state = level.clone();
                                     let temp: String = selected_level.clone();
